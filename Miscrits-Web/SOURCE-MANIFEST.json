@@ -16,13 +16,13 @@
     },
     {
         "path":  "README.md",
-        "bytes":  13776,
-        "sha256":  "A7D50F845E977DA1A89BB0C100B6DF70313DDCA61A932281013DF19D31492E2C"
+        "bytes":  15153,
+        "sha256":  "02C133AFBE3326CAC53E4800A3B08D7E11009980B97E6057D10E8D7A204CBF6B"
     },
     {
         "path":  "server.mjs",
-        "bytes":  8970,
-        "sha256":  "4932020A360955A58CCF6869EBB4B8B254F6BDCE6B13DE2504F30483E3D08FBF"
+        "bytes":  9597,
+        "sha256":  "920DC204B65850A6D0681284AC0F1D9297914E51755104F6CE7BECB0521E5E7F"
     },
     {
         "path":  "SIZE-LIMITS.json",
@@ -35,19 +35,24 @@
         "sha256":  "EB1A347E6D90EC0321C3A49680BFFED3E567ECF1E6ED620F950CC60F218932A2"
     },
     {
+        "path":  "data/arena-protocol.json",
+        "bytes":  206,
+        "sha256":  "DEF7A11613F41CE4F0F86235E3897FDEC2260FCF5D7CCC3A93F7441A34DFA292"
+    },
+    {
         "path":  "data/protocol.json",
         "bytes":  6066,
         "sha256":  "1C6614F75EF73D1296C9F6AC0D386D458B325B18BA8066483924F6B720D4987B"
     },
     {
         "path":  "dist/app.js",
-        "bytes":  42240,
-        "sha256":  "1AC4BE7F47E88904E07534482FB3653C1D0CF663ACA8AFC5FE2CC2C36C3BD841"
+        "bytes":  50982,
+        "sha256":  "C0B6CEA2ED246B7C855035B7238FA23C861CC625E5703A81FD8FA783863968B3"
     },
     {
         "path":  "dist/index.html",
-        "bytes":  22529,
-        "sha256":  "1C9F9EAC9BDEA18F5B9C09E05CBA1BDC8369546E47EA155C4A3A8E257F788851"
+        "bytes":  26372,
+        "sha256":  "3AEFB3163AB9383EDF61506B17A664DCAFFEE5DA42CD7FF884733BEB2C52E27C"
     },
     {
         "path":  "dist/mark.svg",
@@ -56,28 +61,38 @@
     },
     {
         "path":  "dist/style.css",
-        "bytes":  21090,
-        "sha256":  "52A62C4D3D982FB686EF2F790E881516AC61789431D9C02BBFAAEF29301DA0C9"
+        "bytes":  22046,
+        "sha256":  "B41B4E67C8DD99B58AE0DB4B1B99F4C9BD0B2CD4F8D1F3045A90C764F94A5F66"
+    },
+    {
+        "path":  "lib/arena-strategy.mjs",
+        "bytes":  5437,
+        "sha256":  "2D0B27DE489F973550821D31A75B75A3A5B50AA44929437CDB00A1172CA290E5"
+    },
+    {
+        "path":  "lib/arena.mjs",
+        "bytes":  4498,
+        "sha256":  "1EC8A404CA66B5FEC7B82524A63934645ED719749171FBB7B1D408FB764DF0AB"
     },
     {
         "path":  "lib/engine.mjs",
-        "bytes":  39348,
-        "sha256":  "5271152E0AFB56C95C093359324E10F4125BCCE7E45B64EE82624D911BBC4455"
+        "bytes":  54025,
+        "sha256":  "292D2F9788741C9BFDEAD6B6B1FFFEFC9B545CCFBAC2C2CBF5867FC5A6E6873B"
     },
     {
         "path":  "lib/model.mjs",
-        "bytes":  14149,
-        "sha256":  "2BF74201FAEE9331CA9C023C0AF606E0C1AAC002D40D105B0C9952938F0B1877"
+        "bytes":  14721,
+        "sha256":  "3D5A4357D9ABF3F706B06A569B0BCC3777CD1A4844E01068028B158723A58EDD"
     },
     {
         "path":  "lib/transport.mjs",
-        "bytes":  11793,
-        "sha256":  "A3F69AD147D7A52B47D38773D2EB39A30099F0592C8012B8875077BE4218E104"
+        "bytes":  12714,
+        "sha256":  "C7ED95C4793F56D2BB17FC58FDACB05E5EC0F1E8C407FD766FD5FEF3F66D5051"
     },
     {
         "path":  "lib/workflow.mjs",
-        "bytes":  7317,
-        "sha256":  "C635F2E1B7F138EAF64584BCFA0BCB41E08222F610ACE1AA97D2472C9B625556"
+        "bytes":  7765,
+        "sha256":  "38FB68084FFBAFA6DD5E5493F30BC3FB081290DF21E2AA10B621BAB93E99D97F"
     },
     {
         "path":  "runtime/LICENSE.txt",
@@ -93,6 +108,21 @@
         "path":  "runtime/ORIGIN.json",
         "bytes":  390,
         "sha256":  "07ED9DBFCABB0E5A3C58698F2DFAF86CDB25439334749EBA079CA97E637DC05D"
+    },
+    {
+        "path":  "test/arena-strategy.test.mjs",
+        "bytes":  14247,
+        "sha256":  "E00741C6C2122FF8BBAB72346489A6D711E38CEB1A63BE2577DF3AD980608F31"
+    },
+    {
+        "path":  "test/arena.test.mjs",
+        "bytes":  16801,
+        "sha256":  "C4471D9FE3F78F75AC89EE7F411BFB2718C1668EB143C36FDD3BA4FBA2BAAF60"
+    },
+    {
+        "path":  "test/browser-session.test.mjs",
+        "bytes":  5994,
+        "sha256":  "4712C7C61F4FF154000972A5EBA09894EC11F61438FA4404C23F39A864A4683C"
     },
     {
         "path":  "test/collection-dashboard.test.mjs",
@@ -136,8 +166,8 @@
     },
     {
         "path":  "test/server.test.mjs",
-        "bytes":  2127,
-        "sha256":  "E4FD81837BE9AD38F4FE6F0A1D106C2E1B52C2015FA4D07188485A27D01412DB"
+        "bytes":  3295,
+        "sha256":  "458893463FE4F725C82184A5DC1BF9AC7A0987BF274106206C547555064772D8"
     },
     {
         "path":  "test/target-removal.test.mjs",

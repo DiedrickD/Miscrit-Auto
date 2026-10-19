@@ -1,5 +1,5 @@
 {
-  "activity": "campaign",
+  "activity": "arena",
   "mode": "capture_targeted",
   "names": [
     "Blighted Cubsprout",
@@ -54,6 +54,7 @@
     "Manio",
     "Rocapez"
   ],
+  "primaryTarget": "",
   "minRating": 17,
   "captureThreshold": 65,
   "captureLowRatedTargets": true,
@@ -118,5 +119,9 @@
   ],
   "wildAutoHeal": false,
   "wildHealBudget": 30,
-  "notifyEvents": true
+  "notifyEvents": true,
+  "arenaType": "Random",
+  "arenaBattleLimit": 50,
+  "arenaStopOnLoss": false,
+  "arenaAllowInjured": false
 }

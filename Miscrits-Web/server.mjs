@@ -15,6 +15,7 @@ export async function createApp({port=4318,fetchData=true,engine:provided}={}) {
   if (!catalog) throw new Error('Keep Miscrits-Web beside Auto-Capture-Game-Installer so it can load the mapping catalog.');
   const protocol=readJSON(path.join(dataDir,'protocol.json'),null);
   if (!protocol) throw new Error('Missing data/protocol.json.');
+  protocol.arena=readJSON(path.join(dataDir,'arena-protocol.json'),null);
   const configPath=path.join(dataDir,'settings.json'),historyPath=path.join(dataDir,'history.json'),profilesPath=path.join(dataDir,'profiles.json');
   let config=readJSON(configPath,null);
   if (!config) {
@@ -51,16 +52,18 @@ export async function createApp({port=4318,fetchData=true,engine:provided}={}) {
     res.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' https://cdn.worldofmiscrits.com; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     if (req.headers.host!==expected || (req.headers.origin && req.headers.origin!==`http://${expected}`)) {json(res,403,{error:'Local access only.'});return;}
     const url=new URL(req.url,`http://${expected}`);
-    if (url.pathname==='/api/health' && req.method==='GET') {json(res,200,{app:'miscrits-browser',version:11,needsGame:false,connected:Boolean(engine.player&&engine.transport?.connected),reconnecting:Boolean(engine.reconnecting),running:Boolean(engine.running),busy:Boolean(engine.busy),activeBattle:Boolean(engine.battle)});return;}
+    if (url.pathname==='/api/health' && req.method==='GET') {json(res,200,{app:'miscrits-browser',version:14,needsGame:false,connected:Boolean(engine.player&&engine.transport?.connected),reconnecting:Boolean(engine.reconnecting),running:Boolean(engine.running),busy:Boolean(engine.busy),activeBattle:Boolean(engine.battle)});return;}
     if (url.pathname==='/api/bootstrap' && req.method==='GET') {
       const cookie=req.headers.cookie?.split('; ').find(c=>c.startsWith('mc_owner='))?.slice(9);
-      if (ownerCookie && !safeEqual(cookie,ownerCookie)) {json(res,403,{error:'This backend is already open in another browser session. Use that window or restart the website backend.'});return;}
-      if (!ownerCookie) {ownerCookie=randomBytes(32).toString('hex');res.setHeader('Set-Cookie',`mc_owner=${ownerCookie}; HttpOnly; SameSite=Strict; Path=/`);}
+      if (ownerCookie && !safeEqual(cookie,ownerCookie)) {json(res,403,{code:'BROWSER_OWNER_CONFLICT',error:'This website is connected to another browser or browser profile. Use the original window. To switch browsers, finish any battle, then run Stop Miscrits Website.cmd and Launch Miscrits Website.cmd.'});return;}
+      if (!ownerCookie) ownerCookie=randomBytes(32).toString('hex');
+      // Keep the same browser able to reopen while background automation continues.
+      res.setHeader('Set-Cookie',`mc_owner=${ownerCookie}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800`);
       json(res,200,{csrf,catalog:catalog.species.map(s=>({id:s.id,name:s.name,names:s.names,rarity:s.rarity,mapping_status:s.mapping_status,stops:s.stops.map(t=>({location:t.location,area_id:t.area_id,object_id:t.object_id,days:t.days}))})),dataStatus});return;
     }
     if (url.pathname.startsWith('/api/')) {
       const cookie=req.headers.cookie?.split('; ').find(c=>c.startsWith('mc_owner='))?.slice(9);
-      if (!ownerCookie || !safeEqual(cookie,ownerCookie) || !safeEqual(req.headers['x-miscrits-csrf'],csrf)) {json(res,403,{error:'Reopen the website to connect this browser session.'});return;}
+      if (!ownerCookie || !safeEqual(cookie,ownerCookie) || !safeEqual(req.headers['x-miscrits-csrf'],csrf)) {json(res,403,{code:'BROWSER_SESSION_STALE',error:'The local browser session needs to reconnect. Refresh this page and try again.'});return;}
       if (req.method==='GET' && url.pathname==='/api/state') {json(res,200,{...engine.snapshot(),dataStatus});return;}
       if (req.method!=='POST' || !String(req.headers['content-type']).startsWith('application/json')) {json(res,405,{error:'Unsupported request.'});return;}
       try {
@@ -75,7 +78,9 @@ export async function createApp({port=4318,fetchData=true,engine:provided}={}) {
           case '/api/reconnect': await engine.reconnect(); break;
           case '/api/settings': engine.updateConfig(input); break;
           case '/api/start': engine.start(); break;
-          case '/api/pause': engine.stop(); break;
+          case '/api/pause': engine.stop();await engine.arenaCancelPromise; break;
+          case '/api/arena/draft':if(engine.busy)throw new Error('Wait for the pending request.');await engine.draftAction(input.kind,input.ids);break;
+          case '/api/arena/stats':await engine.refreshArenaTotals(input.type);break;
           case '/api/profiles/save':engine.saveProfile(input.name,input.config);break;
           case '/api/profiles/load':engine.loadProfile(input.name);break;
           case '/api/profiles/delete':engine.deleteProfile(input.name);break;

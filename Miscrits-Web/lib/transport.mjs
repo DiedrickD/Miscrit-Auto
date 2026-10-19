@@ -166,13 +166,19 @@ export class Transport {
       // Nakama omits protobuf's default zero value on START frames.
       this.onState(match.match_id, Number(match.op_code ?? 0), data);
     }
+    if(message.matchmaker_matched)this.onArena?.({kind:'matched',data:message.matchmaker_matched});
+    for(const notification of message.notifications?.notifications||[]){
+      if(Number(notification.code)!==42)continue;
+      let data;try{data=typeof notification.content==='string'?JSON.parse(notification.content):notification.content;}catch{continue;}
+      if(typeof data?.matchId==='string')this.onArena?.({kind:'bot',data:{match_id:data.matchId}});
+    }
     if (message.error && !message.cid) this.onClose('The game reported a connection error.');
   }
   request(payload,timeoutMs=25000) {
     if (!this.connected) return Promise.reject(new GameError('The game is disconnected.'));
     return new Promise((resolve, reject) => {
       const cid = String(++this.counter);
-      const mutation=Boolean(payload.rpc && !payload.rpc.id.startsWith('get_'));
+      const mutation=Boolean((payload.rpc && !payload.rpc.id.startsWith('get_'))||payload.matchmaker_add||payload.matchmaker_remove);
       const timer = setTimeout(() => { this.pending.delete(cid); reject(new GameError('Game request timed out. Check state before retrying.', mutation)); }, timeoutMs);
       this.pending.set(cid, {resolve, reject, timer,mutation});
       try { this.socket.send(JSON.stringify({cid, ...payload})); }
@@ -189,6 +195,8 @@ export class Transport {
     }
   }
   async join(id) { await this.request({match_join:{match_id:id}}); }
+  async addArena(type){const result=await this.request({matchmaker_add:{query:'*',min_count:2,max_count:2,string_properties:{type}}});if(typeof result.matchmaker_ticket?.ticket!=='string')throw new GameError('Arena queue returned no ticket. Check server state before retrying.',true);return result.matchmaker_ticket.ticket;}
+  async removeArena(ticket){await this.request({matchmaker_remove:{ticket}});}
   async leave(id) { await this.request({match_leave:{match_id:id}}); }
   send(id, opcode, data = {}) {
     if (!this.connected) throw new GameError('The game is disconnected.');

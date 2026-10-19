@@ -1,5 +1,10 @@
 [
   {
+    "time": "2026-10-19T14:42:30.779Z",
+    "kind": "battle",
+    "message": "Random: defeat / finished"
+  },
+  {
     "time": "2026-10-19T12:49:23.418Z",
     "kind": "battle",
     "message": "Wild: victory"

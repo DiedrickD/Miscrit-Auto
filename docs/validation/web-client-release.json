@@ -4,7 +4,7 @@
     "hosting":  "local loopback backend, not a public domain",
     "backend_health":  {
                            "app":  "miscrits-browser",
-                           "version":  11,
+                           "version":  14,
                            "needsGame":  false,
                            "connected":  false,
                            "reconnecting":  false,
@@ -12,13 +12,13 @@
                            "busy":  false,
                            "activeBattle":  false
                        },
-    "package_bytes":  1980668773,
-    "script_package_bytes":  1893090264,
-    "browser_project_bytes":  87578509,
+    "package_bytes":  1980793823,
+    "script_package_bytes":  1893133527,
+    "browser_project_bytes":  87660296,
     "within_script_2gb":  true,
     "within_browser_10gb":  true,
     "native_game_running":  false,
-    "automated_tests":  126,
+    "automated_tests":  172,
     "automated_failures":  0,
     "test_log":  "docs/validation/web-client-tests.log",
     "user_confirmed":  [
@@ -58,5 +58,8 @@
     "collection_dashboard":  "Read-only frontend: tier progress, owned/missing, best rating, copy lists, index/roster completion, combined filters and pagination; frontend behavior tested, visual inspection unavailable.",
     "workflow_live_report":  "docs/validation/web-workflow-live.json",
     "workflow_validation":  "Read-only queue verified live. Healing, profiles, notifications and stats covered offline; live heal and browser popup delivery remain unverified.",
-    "manual_priority_and_stop_reports":  "Target order and Main persist in settings/profiles; Main falls back during cooldowns. Latest stop retains reason, request/location context and guidance until next stop/sign-in. Verified offline including engine search payloads and frontend behavior; rendered layout not visually inspected."
+    "manual_priority_and_stop_reports":  "Target order and Main persist in settings/profiles; Main falls back during cooldowns. Latest stop retains reason, request/location context and guidance until next stop/sign-in. Verified offline including engine search payloads and frontend behavior; rendered layout not visually inspected.",
+    "arena_automation":  "Battle/Platinum/Random native matchmaking, Random draft, PvP cooldowns, per-run limit/stop-on-loss and late cancellation handling covered offline. Live arena matchmaking/PvP not run; no competing session opened while the website account was connected. See docs/WEB-ARENA.md.",
+    "browser_session_recovery":  "Refresh a stale local browser token and retry once only after a known pre-execution session rejection. Coalesced recovery, legacy backend compatibility, owner isolation and non-replay of network/game errors covered offline. Owner cookie persists for seven days and renews on reopen; same browser can reconnect after closing Chrome. Backend restarted only while paused with no active battle.",
+    "arena_records_and_strategy":  "Server lifetime/period/streak records, independent run win rate, Smart matchup/accuracy/stat-profile/healing/control/switch policy with Basic fallback and draft coverage. Tested offline against native mechanics and official metadata; live win-rate improvement not measured. See docs/ARENA-STRATEGY.md."
 }

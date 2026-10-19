@@ -1,10 +1,12 @@
-export const DEFAULTS = Object.freeze({activity:'wild', mode:'manual_target', names:[],primaryTarget:'', minRating:17, captureThreshold:70, captureLowRatedTargets:false, autoRemoveCapturedTargets:true, fleeUnwanted:true, maxAttacks:12, campaignLimit:10, autoLevel:false, trainSelected:false, autoReplace:false, replacementNames:[],wildAutoHeal:false,wildHealBudget:30,notifyEvents:true});
+export const DEFAULTS = Object.freeze({activity:'wild', mode:'manual_target', names:[],primaryTarget:'', minRating:17, captureThreshold:70, captureLowRatedTargets:false, autoRemoveCapturedTargets:true, fleeUnwanted:true, maxAttacks:12, campaignLimit:10, autoLevel:false, trainSelected:false, autoReplace:false, replacementNames:[],wildAutoHeal:false,wildHealBudget:30,notifyEvents:true,arenaType:'Default',arenaStrategy:'smart',arenaBattleLimit:10,arenaStopOnLoss:true,arenaAllowInjured:false});
 export const TRAINING_TIERS=Object.freeze(['Exotic','Rare','Common','Epic','Legendary']);
 export const TRAINING_MIN_RATING=17;
 export function settings(input, catalog) {
   const result = {...DEFAULTS};
-  for (const key of ['activity','mode']) if (typeof input[key] === 'string') result[key] = input[key];
-  if (!['wild','campaign'].includes(result.activity)) throw new Error('Choose a supported activity.');
+  for (const key of ['activity','mode','arenaType','arenaStrategy']) if (typeof input[key] === 'string') result[key] = input[key];
+  if(input.arenaStrategy!==undefined&&(typeof input.arenaStrategy!=='string'||!['smart','basic'].includes(result.arenaStrategy)))throw new Error('Choose a supported arena strategy.');
+  if (!['wild','campaign','arena'].includes(result.activity)) throw new Error('Choose a supported activity.');
+  if(input.arenaType!==undefined && (typeof input.arenaType!=='string'||!['Default','Platinum','Random'].includes(result.arenaType)))throw new Error('Choose a supported arena.');
   if (!['fight','capture_any','capture_missing','capture_targeted','capture_rated','manual_target'].includes(result.mode)) throw new Error('Choose a supported battle mode.');
   for (const key of ['names','replacementNames']) {
     if (input[key] === undefined) continue;
@@ -16,7 +18,7 @@ export function settings(input, catalog) {
       return entry.name;
     }))];
   }
-  for (const [key, max, min] of [['minRating',18,0],['captureThreshold',100,1],['maxAttacks',50,1],['campaignLimit',10,1],['wildHealBudget',1000,0]]) {
+  for (const [key, max, min] of [['minRating',18,0],['captureThreshold',100,1],['maxAttacks',50,1],['campaignLimit',10,1],['wildHealBudget',1000,0],['arenaBattleLimit',1000,1]]) {
     if (input[key] === undefined) continue;
     if (!Number.isInteger(input[key]) || input[key] < min || input[key] > max) throw new Error('Invalid value for ' + key);
     result[key] = input[key];
@@ -26,7 +28,7 @@ export function settings(input, catalog) {
     const selected=result.names.find(name=>name.toLowerCase()===input.primaryTarget.toLowerCase());
     result.primaryTarget=selected||'';
   }
-  for (const key of ['autoLevel','trainSelected','autoReplace','fleeUnwanted','captureLowRatedTargets','autoRemoveCapturedTargets','wildAutoHeal','notifyEvents']) {
+  for (const key of ['autoLevel','trainSelected','autoReplace','fleeUnwanted','captureLowRatedTargets','autoRemoveCapturedTargets','wildAutoHeal','notifyEvents','arenaStopOnLoss','arenaAllowInjured']) {
     if (input[key] !== undefined && typeof input[key] !== 'boolean') throw new Error('Invalid ' + key);
     if (input[key] !== undefined) result[key] = input[key];
   }

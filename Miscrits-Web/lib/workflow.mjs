@@ -14,6 +14,7 @@ export function nextSearchStop({config,stops,cursor=0,catalog,cooldowns,now=Date
 }
 export function stopAdvice(message,{uncertain=false,rpcId='',battle=false}={}){
   if(uncertain)return {category:'Uncertain action',action:'Check Live battle and your team. Sign out and sign in again to reload server state before restarting. Do not repeat the previous action.'};
+  if(/arena/i.test(message)||/^get_(battle|platinum|random)_arena$/.test(rpcId))return {category:'Arena',action:'Check Arena for queue or draft status and team requirements. Finish an assigned battle or draft before changing modes. After a search timeout or game restriction, inspect account state before Start.'};
   if(/budget/i.test(message))return {category:'Healing budget',action:'Open Workflow and increase the wild virtue budget, or heal manually. Save settings before Start.'};
   if(/virtue/i.test(message))return {category:'Insufficient virtue',action:'Check the virtue balance and heal your team in the game when available. Resume only after the team is ready.'};
   if(/session expired|sign in|signed out|login/i.test(message))return {category:'Account session',action:'Sign in again using Connect account. Check any restored battle before Start.'};
@@ -31,7 +32,7 @@ export function stopAdvice(message,{uncertain=false,rpcId='',battle=false}={}){
 }
 export function targetQueue({config,player,catalog,metadata,index,cooldowns,cursor=0,currentSearch,battle,now=Date.now()}){
   if(!player)return {current:null,next:null,targets:[],message:'Sign in to load the target queue.'};
-  if(config.activity!=='wild')return {current:battle?{label:'Campaign battle'}:null,next:null,targets:[],message:'Campaign is selected. Wild targets resume when Hunt is selected.'};
+  if(config.activity!=='wild')return {current:battle?{label:config.activity==='arena'?'Arena battle':'Campaign battle'}:null,next:null,targets:[],message:config.activity==='arena'?'Arena is selected. Open Arena for matchmaking and draft status.':'Campaign is selected. Wild targets resume when Hunt is selected.'};
   const plan=config.trainSelected?selectedTrainingPlan(player,config.replacementNames,catalog,metadata,index):null;
   const names=huntNames(config,plan),route=routePlan({...config,names},player,catalog);
   const {stop:next}=nextSearchStop({config,stops:route.stops,cursor,catalog,cooldowns,now});

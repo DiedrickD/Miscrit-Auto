@@ -3,11 +3,33 @@ let csrf='',catalog=[],state=null,tab='hunt',draft=null,dirty=false,posting=fals
 const copy=value=>structuredClone(value);
 let collectionPage=1,collectionRenderKey='';
 let browserAlertsEnabled=false;
-const titles={hunt:['Hunt & capture','Make every search count.','Choose your Miscrits. Set the rules. Let the hunt come to you.'],campaign:['Campaign','Find your way forward.','One team. One stage at a time. Every confirmed victory counts.'],team:['Your team','A little stronger, together.','Keep your strongest lead. Give your next great Miscrits room to grow.'],battle:['Live battle','Your move, trainer.','A clear view of the battle, with manual controls when you need them.'],workflow:['Workflow','See what happens next.','Follow the queue, manage healing, save profiles and check this session.'],collection:['Collection','Know every Miscrit you own.','Track missing families, your best copies, and level-30 completion by tier.'],history:['Activity log','Every encounter, recorded.','Your captures, victories, and recent activity in one place.']};
+const titles={arena:['Arena','Ready for the next challenger.','Choose Battle, Platinum or Random Arena. Follow the queue, draft and live battle.'],hunt:['Hunt & capture','Make every search count.','Choose your Miscrits. Set the rules. Let the hunt come to you.'],campaign:['Campaign','Find your way forward.','One team. One stage at a time. Every confirmed victory counts.'],team:['Your team','A little stronger, together.','Keep your strongest lead. Give your next great Miscrits room to grow.'],battle:['Live battle','Your move, trainer.','A clear view of the battle, with manual controls when you need them.'],workflow:['Workflow','See what happens next.','Follow the queue, manage healing, save profiles and check this session.'],collection:['Collection','Know every Miscrit you own.','Track missing families, your best copies, and level-30 completion by tier.'],history:['Activity log','Every encounter, recorded.','Your captures, victories, and recent activity in one place.']};
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,6000);}
+let bootstrapRequest=null;
+async function bootstrapBrowser(){
+  if(bootstrapRequest)return bootstrapRequest;
+  bootstrapRequest=(async()=>{
+    const response=await fetch('/api/bootstrap',{credentials:'same-origin',cache:'no-store'}),boot=await response.json();
+    if(!response.ok){
+      const conflict=boot.code==='BROWSER_OWNER_CONFLICT'||boot.error==='This backend is already open in another browser session. Use that window or restart the website backend.';
+      throw new Error(conflict?'This website is connected to another browser or browser profile. Use the original window. To switch browsers, finish any battle, then run Stop Miscrits Website.cmd and Launch Miscrits Website.cmd.':boot.error||'Unable to connect this browser. Refresh the page and use the original browser window.');
+    }
+    if(typeof boot.csrf!=='string'||!boot.csrf||!Array.isArray(boot.catalog))throw new Error('The local website returned an incomplete browser session. Refresh this page.');
+    csrf=boot.csrf;if(!catalog.length){catalog=boot.catalog;fillCatalog();}return boot;
+  })();
+  try{return await bootstrapRequest;}finally{bootstrapRequest=null;}
+}
 async function api(endpoint,value){
-  const res=await fetch('/api/'+endpoint,{method:value===undefined?'GET':'POST',headers:{'X-Miscrits-CSRF':csrf,...(value===undefined?{}:{'Content-Type':'application/json'})},...(value===undefined?{}:{body:JSON.stringify(value)})});
-  const data=await res.json();if(!res.ok)throw new Error(data.error||'Request failed.');return data;
+  if(!csrf)await bootstrapBrowser();
+  for(let attempt=0;attempt<2;attempt++){
+    const sentCsrf=csrf;
+    const res=await fetch('/api/'+endpoint,{method:value===undefined?'GET':'POST',credentials:'same-origin',headers:{'X-Miscrits-CSRF':sentCsrf,...(value===undefined?{}:{'Content-Type':'application/json'})},...(value===undefined?{}:{body:JSON.stringify(value)})});
+    const data=await res.json();
+    // These 403s are produced before the backend executes any action. Network/game errors are never replayed.
+    const stale=res.status===403&&(data.code==='BROWSER_SESSION_STALE'||data.error==='Reopen the website to connect this browser session.');
+    if(stale&&attempt===0){if(csrf===sentCsrf)await bootstrapBrowser();continue;}
+    if(!res.ok)throw new Error(data.error||'Request failed.');return data;
+  }
 }
 async function post(endpoint,value={}){if(posting)return;posting=true;try{await api(endpoint,value);await poll();}catch(error){toast(error.message);}finally{posting=false;}}
 function element(tag,className,text){const el=document.createElement(tag);if(className)el.className=className;if(text!==undefined)el.textContent=text;return el;}
@@ -16,7 +38,7 @@ function image(name,className='avatar'){
   img.src='https://cdn.worldofmiscrits.com/avatars/'+String(name).toLowerCase().replaceAll(' ','_')+'_avatar.png';
   img.addEventListener('error',()=>{img.src='/mark.svg';},{once:true});return img;
 }
-function setTab(next){tab=next;document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-panel').forEach(p=>p.hidden=p.id!=='tab-'+tab);const [label,title,description]=titles[tab];$('page-label').textContent=label;$('page-title').textContent=title;$('page-description').textContent=description;if(next==='collection')renderCollection();if(next==='workflow')renderWorkflow();}
+function setTab(next){tab=next;document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-panel').forEach(p=>p.hidden=p.id!=='tab-'+tab);const [label,title,description]=titles[tab];$('page-label').textContent=label;$('page-title').textContent=title;$('page-description').textContent=description;if(next==='arena')renderArena();if(next==='collection')renderCollection();if(next==='workflow')renderWorkflow();}
 document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener('click',()=>setTab(button.dataset.tab)));
 function canonical(value){return catalog.find(s=>s.name.toLowerCase()===value.trim().toLowerCase());}
 function addName(input,key){if(!draft)return;const entry=canonical(input.value);if(!entry){toast('Choose a Miscrit family from the list.');return;}if(!draft[key].includes(entry.name))draft[key].push(entry.name);dirty=true;input.value='';renderLists();}
@@ -50,10 +72,66 @@ function renderLists(){
   renderTierLists();
   renderRoster();
 }
-function loadDraft(config){draft=copy(config);$('mode').value=draft.mode;$('rating').value=draft.minRating;$('threshold').value=draft.captureThreshold;$('capture-low-rating').checked=draft.captureLowRatedTargets;$('remove-captured-targets').checked=draft.autoRemoveCapturedTargets;$('max-attacks').value=draft.maxAttacks;$('flee').checked=draft.fleeUnwanted;$('campaign-limit').value=draft.campaignLimit;$('replace').checked=draft.autoReplace;$('auto-level').checked=draft.autoLevel;$('train-selected').checked=draft.trainSelected;$('replace').disabled=draft.trainSelected;$('wild-heal').checked=draft.wildAutoHeal;$('wild-heal-budget').value=draft.wildHealBudget;$('notify-events').checked=draft.notifyEvents;renderLists();modeHelp();}
+function loadDraft(config){draft=copy(config);loadArenaDraft();$('mode').value=draft.mode;$('rating').value=draft.minRating;$('threshold').value=draft.captureThreshold;$('capture-low-rating').checked=draft.captureLowRatedTargets;$('remove-captured-targets').checked=draft.autoRemoveCapturedTargets;$('max-attacks').value=draft.maxAttacks;$('flee').checked=draft.fleeUnwanted;$('campaign-limit').value=draft.campaignLimit;$('replace').checked=draft.autoReplace;$('auto-level').checked=draft.autoLevel;$('train-selected').checked=draft.trainSelected;$('replace').disabled=draft.trainSelected;$('wild-heal').checked=draft.wildAutoHeal;$('wild-heal-budget').value=draft.wildHealBudget;$('notify-events').checked=draft.notifyEvents;renderLists();modeHelp();}
 function modeHelp(){const help={manual_target:'Automation pauses when your selected target appears. Continue in Live battle.',capture_targeted:'Weaken selected targets, then attempt a free capture at your threshold.',capture_any:'Use the capture rules for every wild species encountered.',capture_missing:'Capture any encountered species absent from your current collection, treating evolved copies as the same family. Your hunt list sets the search route. Listed species without a rating-17+ copy are also captured when a qualifying copy appears. Owned encounters provide XP while selected copies are training; otherwise the run/fight setting applies.',capture_rated:'Use the capture rules when the server rating meets your minimum.',fight:'Fight wild encounters using an available attack. No captures.'};$('mode-help').textContent=help[$('mode').value];}
 ['mode','rating','threshold','max-attacks','flee','campaign-limit','replace','auto-level','train-selected','capture-low-rating','remove-captured-targets','wild-heal','wild-heal-budget','notify-events'].forEach(id=>$(id).addEventListener('input',()=>{if(!draft)return;dirty=true;draft.trainSelected=$('train-selected').checked;$('replace').disabled=draft.trainSelected;renderRoster();modeHelp();}));
-function formConfig(){return {...draft,activity:tab==='campaign'?'campaign':tab==='hunt'?'wild':draft.activity,mode:$('mode').value,minRating:Number($('rating').value),captureThreshold:Number($('threshold').value),captureLowRatedTargets:$('capture-low-rating').checked,autoRemoveCapturedTargets:$('remove-captured-targets').checked,maxAttacks:Number($('max-attacks').value),fleeUnwanted:$('flee').checked,campaignLimit:Number($('campaign-limit').value),autoLevel:$('auto-level').checked,trainSelected:$('train-selected').checked,autoReplace:$('replace').checked,wildAutoHeal:$('wild-heal').checked,wildHealBudget:Number($('wild-heal-budget').value),notifyEvents:$('notify-events').checked};}
+function formConfig(){return {...draft,activity:selectedActivity(),arenaType:$('arena-type').value,arenaStrategy:$('arena-strategy').value,arenaBattleLimit:Number($('arena-limit').value),arenaStopOnLoss:$('arena-stop-loss').checked,arenaAllowInjured:$('arena-injured').checked,mode:$('mode').value,minRating:Number($('rating').value),captureThreshold:Number($('threshold').value),captureLowRatedTargets:$('capture-low-rating').checked,autoRemoveCapturedTargets:$('remove-captured-targets').checked,maxAttacks:Number($('max-attacks').value),fleeUnwanted:$('flee').checked,campaignLimit:Number($('campaign-limit').value),autoLevel:$('auto-level').checked,trainSelected:$('train-selected').checked,autoReplace:$('replace').checked,wildAutoHeal:$('wild-heal').checked,wildHealBudget:Number($('wild-heal-budget').value),notifyEvents:$('notify-events').checked};}
+function selectedActivity(){return tab==='arena'?'arena':tab==='campaign'?'campaign':tab==='hunt'?'wild':draft.activity;}
+function loadArenaDraft(){
+  $('arena-type').value=draft.arenaType||'Default';$('arena-strategy').value=draft.arenaStrategy||'smart';$('arena-limit').value=draft.arenaBattleLimit??10;$('arena-stop-loss').checked=draft.arenaStopOnLoss??true;$('arena-injured').checked=draft.arenaAllowInjured??false;arenaRules();
+}
+function arenaRules(){
+  $('arena-rules').textContent=({Default:'Four different species, full team. Uses current HP; heal before joining if all teammates have fainted.',Platinum:'Four different species, all level 35, total rarity points at most 12. Common 1 / Rare 2 / Epic 3 / Exotic 4 / Legendary 5. These are rarity points, separate from the 0–18 copy rating.',Random:'The server provides a species pool. Automatically ban 6, then pick 4, then fight using the drafted team. Your collection team is unchanged.'})[$('arena-type').value];
+}
+for(const id of ['arena-type','arena-limit','arena-stop-loss','arena-injured','arena-strategy'])$(id).addEventListener('input',()=>{dirty=true;arenaRules();renderArena();});
+let draftSelection={key:'',ids:[]};
+let arenaStatsLoading=false;
+const arenaStatsAttempts=new Map();
+async function loadArenaTotals(force=false){
+  if(arenaStatsLoading||posting||!state?.connected||state.running||state.busy||state.battle||state.draft||state.reconnecting)return;
+  const type=$('arena-type').value||state.config?.arenaType||'Default';
+  if(!force&&(state.arena?.records?.[type]||Date.now()-(arenaStatsAttempts.get(type)||0)<60000))return;
+  arenaStatsLoading=true;arenaStatsAttempts.set(type,Date.now());$('arena-refresh-totals').disabled=true;
+  try{await api('arena/stats',{type});await poll();}catch(error){$('arena-record-source').textContent=error.message;if(force)toast(error.message);}finally{arenaStatsLoading=false;$('arena-refresh-totals').disabled=Boolean(!state?.connected||state.running||state.busy||state.battle||state.draft||state.reconnecting);}
+}
+function renderArenaTotals(){
+  if(!state?.connected)arenaStatsAttempts.clear();
+  const type=$('arena-type').value||state?.config?.arenaType||'Default',record=state?.arena?.records?.[type];
+  $('arena-record-title').textContent=({Default:'Battle Arena',Platinum:'Platinum Arena',Random:'Random Arena'})[type]+' · account wins';
+  const rows=[['Total wins',record?.totalWins],['Total losses',record?.totalLosses]];
+  if(type==='Platinum')rows.push(['Current streak',record?.streak],['Best streak',record?.bestStreak]);
+  else rows.push([type==='Random'?'Monthly wins':'Weekly wins',record?.periodWins]);
+  const items=$('arena-account-totals');items.replaceChildren();for(const [label,value]of rows){const item=element('div');item.append(element('small','',label),element('strong','',Number.isSafeInteger(value)?value.toLocaleString():'—'));items.append(item);}
+  $('arena-record-source').textContent=!state?.connected?'Sign in to load arena totals.':!record?'Open Arena while idle to load totals, or press Refresh totals.':record.error||'From the game server · updated '+new Date(record.updatedAt).toLocaleTimeString()+(type==='Platinum'&&record.totalWins===null?' · Lifetime wins were not supplied by this response.':'');
+  $('arena-refresh-totals').disabled=Boolean(arenaStatsLoading||!state?.connected||state.running||state.busy||state.battle||state.draft||state.reconnecting);
+  if(typeof tab==='string'&&tab==='arena'&&!record&&!arenaStatsLoading)void loadArenaTotals();
+}
+function renderArena(){
+  renderArenaTotals();
+  const arena=state?.arena,queue=arena?.queue,run=arena?.run||{},d=state?.draft;
+  $('arena-status').textContent=d?'Draft: '+d.stage:state?.battle&&['Default','Platinum','Random'].includes(state.battle.type)?'In battle':queue?.searching?'Searching':state?.running&&state?.config?.activity==='arena'?'Running':'Paused';
+  $('arena-queue').textContent=queue?queue.status+(queue.searching?' · '+queue.elapsedSeconds+'s / 120s':''):state?.connected?'Save arena settings, then press Start on this tab.':'Sign in to start arena matchmaking.';
+  const counters=$('arena-counters');counters.replaceChildren();for(const [label,value]of [['Run battles',run.battles||0],['Run wins',run.wins||0],['Run losses',run.losses||0],['Run win rate',run.battles?Math.round((run.wins||0)/run.battles*100)+'%':'-']]){const item=element('div');item.append(element('small','',label),element('strong','',value));counters.append(item);}
+  $('arena-open-battle').disabled=!state?.battle;
+  $('arena-decision').textContent=state?.battle?.strategyReason||'Smart compares legal options using matchup, accuracy, damage observations, HP and active effects. Basic uses highest AP. Improvement in live win rate has not been measured.';
+  $('arena-draft').hidden=!d;if(!d)return;
+  const key=d.id+':'+d.stage;if(draftSelection.key!==key)draftSelection={key,ids:[]};
+  const count=d.stage==='ban'?6:4,selecting=['ban','pick'].includes(d.stage);
+  const blocked=state.running||state.busy||state.reconnecting||!state.connected||d.awaiting||!selecting;
+  $('draft-title').textContent=d.stage==='ban'?'Ban 6 species':d.stage==='pick'?'Pick 4 species':d.stage==='preparing'?'Preparing battle':'Loading draft';
+  $('draft-time').textContent=d.deadline?Math.max(0,Math.ceil((d.deadline-Date.now())/1000))+'s':'Waiting';
+  $('draft-help').textContent=state.running?'Auto draft is active.':d.awaiting?'Selection sent. Waiting for the opponent/server.':'Select '+count+' species below. The server timer continues while paused.';
+  const pool=$('draft-pool');pool.replaceChildren();
+  for(const id of d.pool){const family=catalog.find(s=>s.id===id),banned=d.banned.includes(id),label=element('label','draft-species'+(banned?' is-banned':''));
+    const input=element('input');input.type='checkbox';input.checked=draftSelection.ids.includes(id);input.disabled=blocked||banned;
+    input.addEventListener('change',()=>{if(input.checked){if(draftSelection.ids.length>=count){input.checked=false;toast('Select exactly '+count+' species.');return;}draftSelection.ids.push(id);}else draftSelection.ids=draftSelection.ids.filter(value=>value!==id);renderArena();});
+    label.append(input,element('span','',(family?.name||'Miscrit '+id)+(banned?' · banned':'')));pool.append(label);
+  }
+  $('draft-submit').textContent='Submit '+draftSelection.ids.length+' / '+count+' '+(d.stage==='ban'?'bans':'picks');$('draft-submit').disabled=blocked||draftSelection.ids.length!==count;
+}
+$('arena-open-battle').addEventListener('click',()=>setTab('battle'));
+$('arena-refresh-totals').addEventListener('click',()=>loadArenaTotals(true));
+$('draft-submit').addEventListener('click',()=>post('arena/draft',{kind:state?.draft?.stage,ids:draftSelection.ids}));
 async function save(){if(!draft)return;const next=formConfig();try{await api('settings',next);dirty=false;await poll();toast('Settings saved.');}catch(error){toast(error.message);}}
 document.querySelectorAll('.save').forEach(button=>button.addEventListener('click',save));
 const trainingTiers=['Exotic','Rare','Common','Epic','Legendary'];
@@ -212,15 +290,16 @@ function renderTeam(){const container=$('team-cards');container.replaceChildren(
 function combatant(member,side){const card=element('div','combatant');card.append(image(catalog.find(s=>s.id===member.mId)?.name||member.name),element('h3','',member.name),element('p','',`${side} · Level ${member.level}${member.rating!==undefined?' · '+member.rating+'/18':''}`));const bar=element('div','hp-track');const progress=element('progress');progress.max=member.hp;progress.value=Math.max(0,member.chp);progress.setAttribute('aria-label',member.name+' health');bar.append(progress);card.append(bar,element('small','',`${member.chp} / ${member.hp} HP`));return card;}
 function actionButton(label,kind,id,className='button subtle'){const button=element('button',className,label);button.addEventListener('click',()=>post('action',{kind,...(id===undefined?{}:{id})}));return button;}
 function renderBattle(){
+  renderArena();
   const b=state.battle;$('battle-dot').hidden=!b;$('battle-empty').hidden=Boolean(b&&!b.joining);$('battle-content').hidden=!b||b.joining;
   if(!b||b.joining){$('turn').textContent=b?'Joining battle…':'No active battle';return;}
-  $('battle-title').textContent=b.type==='Campaign'?'Campaign battle':'Wild encounter';const own=b.nextTurn===b.player.user_id;
+  $('battle-title').textContent=({Default:'Battle Arena',Platinum:'Platinum Arena',Random:'Random Arena',Campaign:'Campaign battle',Wild:'Wild encounter'})[b.type]||b.type+' battle';const own=b.nextTurn===b.player.user_id;
   $('turn').textContent=b.winner?'Battle ending…':b.pending?'Captured!':own?'Your turn':'Opponent’s turn';
   $('battle-player').replaceChildren(combatant(b.player.miscrits[0],'Your team'));$('battle-foe').replaceChildren(combatant(b.foe.miscrits[0],'Opponent'));
   const blocked=!state.connected||state.reconnecting||state.running||state.busy||!own||b.awaitingAction||b.acted===b.serial||b.pending||Boolean(b.winner)||b.player.miscrits[0].handicap;
   $('abilities').replaceChildren();for(const a of b.player.miscrits[0].abilities){const button=actionButton(a.name,'ability',a.id,'ability');button.append(element('small','',`${a.element} · ${a.type}${a.recharge>0?' · CD '+a.recharge:''}`));button.disabled=blocked||a.recharge!==0||a.remaining===0;button.title=a.desc||'';$('abilities').append(button);}
   $('switches').replaceChildren();for(const m of b.player.miscrits.slice(1)){const button=actionButton('Switch: '+m.name,'switch',m.id);button.disabled=blocked||m.chp<=0||b.player.miscrits[0].paralyzed;$('switches').append(button);}
-  $('capture-chance').textContent=b.type==='Wild'?`Server capture chance: ${b.captureChance??'—'}% · Attempts: ${b.foe.miscrits[0].attempts||0}`:'Campaign battle · captures unavailable';
+  $('capture-chance').textContent=b.type==='Wild'?`Server capture chance: ${b.captureChance??'—'}% · Attempts: ${b.foe.miscrits[0].attempts||0}`:b.type+' battle · captures unavailable';
   $('capture').disabled=blocked||b.type!=='Wild'||!(b.captureChance>0)||b.foe.miscrits[0].attempts>0;
   $('flee-action').disabled=blocked;$('keep').hidden=!b.pending||!b.foe.miscrits[0].captured;$('keep').disabled=!state.connected||state.reconnecting||state.running||b.keepSent||b.awaitingAction||b.acted===b.serial;
   if(b.manual && b.id!==lastBattleId){lastBattleId=b.id;setTab('battle');toast('Target found. Your manual battle is ready.');}
@@ -295,7 +374,7 @@ function reconcileHuntTargets(previous,current){
   draft.names=names;if(!names.includes(draft.primaryTarget))draft.primaryTarget='';return true;
 }
 async function poll(){if(polling||!csrf)return;polling=true;try{const next=await api('state');const targetsChanged=reconcileHuntTargets(state?.config?.names,next.config.names);consumeAlerts(state,next);state=next;if(targetsChanged)renderLists();render();}catch(error){$('status').textContent=error.message;$('connection').textContent='● Backend unavailable';$('run').disabled=true;}finally{polling=false;}}
-$('run').addEventListener('click',async()=>{if(state.running){await post('pause');return;}if(dirty){toast('Save your settings before starting.');return;}const desired=tab==='campaign'?'campaign':tab==='hunt'?'wild':draft.activity;if(desired!==draft.activity){try{await api('settings',{...draft,activity:desired});await poll();}catch(error){toast(error.message);return;}}await post('start');});
+$('run').addEventListener('click',async()=>{if(state.running){await post('pause');return;}if(dirty){toast('Save your settings before starting.');return;}const desired=selectedActivity();if(desired!==draft.activity){try{await api('settings',{...draft,activity:desired});await poll();}catch(error){toast(error.message);return;}}await post('start');});
 $('tier-account-action').addEventListener('click',()=>state?.player&&!state.requiresLogin?post('reconnect'):openLogin());
 function openLogin(){if(!state?.connected&&!state?.reconnecting)$('login-dialog').showModal();}
 $('connect').addEventListener('click',()=>state?.player&&!state.requiresLogin?post('reconnect'):openLogin());$('close-login').addEventListener('click',()=>$('login-dialog').close());
@@ -303,4 +382,9 @@ $('account-button').addEventListener('click',()=>state?.connected?post('logout')
 $('login-form').addEventListener('submit',async event=>{event.preventDefault();$('login-error').textContent='';$('sign-in').disabled=true;const identity=$('identity').value,password=$('password').value;$('password').value='';try{await api('login',{identity,password});$('login-dialog').close();await poll();}catch(error){$('login-error').textContent=error.message;}finally{$('sign-in').disabled=false;}});
 document.addEventListener('keydown',event=>{if(event.key==='F8'&&state?.connected){event.preventDefault();$('run').click();}});
 document.querySelector('[data-tab="history"]').addEventListener('click',()=>{if(state)renderHistory();});
-try{const res=await fetch('/api/bootstrap');const boot=await res.json();if(!res.ok)throw new Error(boot.error);csrf=boot.csrf;catalog=boot.catalog;for(const s of catalog){const option=element('option');option.value=s.name;$('species').append(option);}$('target-input').placeholder=`Search ${catalog.length} Miscrit families…`;$('mapped-count').textContent=catalog.filter(s=>s.stops.length).length+' with routes';await poll();setInterval(poll,1800);}catch(error){$('status').textContent=error.message;toast(error.message);}
+function fillCatalog(){
+  $('species').replaceChildren();for(const s of catalog){const option=element('option');option.value=s.name;$('species').append(option);}
+  $('target-input').placeholder=`Search ${catalog.length} Miscrit families…`;$('mapped-count').textContent=catalog.filter(s=>s.stops.length).length+' with routes';
+}
+try{await bootstrapBrowser();await poll();}catch(error){$('status').textContent=error.message;toast(error.message);}
+setInterval(poll,1800);

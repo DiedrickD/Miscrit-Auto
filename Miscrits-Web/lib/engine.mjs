@@ -1,6 +1,8 @@
 import {Transport, GameError} from './transport.mjs';
 import {DEFAULTS, TRAINING_MIN_RATING, settings, owned, trainingStatus, collectionFamilies, miscritsIndex, selectedTrainingPlan, rotationPlan, routePlan, abilities, decision,targetMatches,atSearchLocation} from './model.mjs';
 import {SessionStats,huntNames,targetQueue,nextSearchStop,stopAdvice} from './workflow.mjs';
+import {ARENAS,isArena,arenaEligibility,draftChoices,arenaTotals} from './arena.mjs';
+import {arenaDecision} from './arena-strategy.mjs';
 
 export class Engine {
   constructor({catalog,protocol,config={},save=()=>{},history=[],saveHistory=()=>{},profiles=[],saveProfiles=()=>{},transportFactory}) {
@@ -14,6 +16,7 @@ export class Engine {
     this.transportFactory=transportFactory || ((onState,onClose)=>new Transport(onState,onClose));
     this.stats=new SessionStats();this.wildHealingSpent=0;this.currentSearch=null;this.alerts=[];this.alertId=0;this.saveProfiles=saveProfiles;this.profiles=[];
     this.lastStop=null;
+    this.arenaQueue=null;this.draft=null;this.arenaRun={battles:0,wins:0,losses:0,type:null};this.arenaCancelPromise=null;this.arenaRecords={};
     for(const profile of Array.isArray(profiles)?profiles.slice(0,20):[]){try{this.profiles.push({name:this.profileName(profile.name),config:settings(profile.config,catalog)});}catch{}}
   }
   log(message,kind='info') {
@@ -25,6 +28,8 @@ export class Engine {
     this.lastStop={time:new Date().toISOString(),message,...stopAdvice(message,{...details,uncertain:this.uncertain,battle:Boolean(this.battle)}),rpcId:details.rpcId||'',uncertain:this.uncertain,activity:this.config.activity,
       location:details.location||(this.config.activity==='wild'&&this.currentSearch?{map:this.currentSearch.location,area:this.currentSearch.area_id,object:this.currentSearch.object_id}:null),battle:this.battle?.type||'',resumedAt:null};
     if(wasRunning)this.notify('stopped',message);
+    if(this.arenaQueue?.ticket&&!this.arenaQueue.cancelled&&!this.battle&&!this.draft)void this.cancelArenaQueue().catch(error=>this.fail(error));
+    else if(this.arenaQueue&&!this.arenaQueue.matched&&!this.arenaQueue.ticket&&this.arenaQueue.status!=='Joining queue'){this.arenaQueue.cancelled=true;this.arenaQueue.status='Queue stopped';}
   }
   notify(kind,message){if(!this.config.notifyEvents)return;this.alerts.unshift({id:++this.alertId,time:new Date().toISOString(),kind,message});this.alerts.length=Math.min(this.alerts.length,100);}
   profileName(name){if(typeof name!=='string'||!name.trim()||name.trim().length>48||/[\x00-\x1f]/.test(name))throw new Error('Use a profile name from 1 to 48 characters.');return name.trim();}
@@ -47,11 +52,13 @@ export class Engine {
     this.busy=true; this.log('Connecting to Miscrits…');
     this.stats.reset();this.wildHealingSpent=0;this.currentSearch=null;this.alerts=[];
     this.lastStop=null;
+    this.arenaQueue=null;this.draft=null;this.arenaRun={battles:0,wins:0,losses:0,type:null};this.arenaRecords={};
     const transport=this.transportFactory((id,opcode,data)=>{
       if(this.transport!==transport)return;
       this.sequence=this.sequence.then(()=>this.transport===transport?this.receive(id,opcode,data):undefined).catch(error=>this.fail(error));
     },(message,details)=>{if(this.transport===transport)this.disconnected(message,details);});
     this.transport=transport;
+    transport.onArena=event=>{if(this.transport===transport)this.sequence=this.sequence.then(()=>this.transport===transport?this.arenaMatched(event):undefined).catch(error=>this.fail(error));};
     try {
       await this.transport.login(identity.trim(),password);
       await this.refresh();
@@ -67,7 +74,7 @@ export class Engine {
     const player=await this.transport.rpc('get_player');
     if (!player.user_id || !Array.isArray(player.miscrits) || !Array.isArray(player.team_order)) throw new GameError('The player response is incomplete.',true);
     this.player=player;
-    if(this.config.trainSelected)await this.refreshIndex();
+    if(this.config.trainSelected&&this.config.activity!=='arena')await this.refreshIndex();
   }
   async refreshIndex(force=false) {
     if(!force && this.collectionIndex && Date.now()-this.indexUpdated<30000)return;
@@ -79,11 +86,13 @@ export class Engine {
   }
   async logout() {
     if (this.busy) throw new Error('Wait for the pending game request before signing out.');
+    await this.cancelArenaQueue();
     this.connectionEpoch++;this.reconnecting=false;this.requiresLogin=false;
-    this.stop('Signed out.'); this.transport?.close(); this.transport=null; this.player=null; this.battle=null; this.collectionIndex=null;this.indexUpdated=0;this.uncertain=false;
+    this.stop('Signed out.'); this.transport?.close(); this.transport=null; this.player=null; this.battle=null;this.draft=null;this.arenaQueue=null;this.arenaRecords={};this.collectionIndex=null;this.indexUpdated=0;this.uncertain=false;
   }
   disconnected(message,details={}) {
     this.uncertain ||= Boolean(details.uncertain || this.battle?.awaitingAction);
+    if(this.arenaQueue&&!this.arenaQueue.matched){this.arenaQueue.cancelled=true;this.arenaQueue.ticket=null;this.arenaQueue.status='Connection lost';}
     this.stop(message+' Reconnecting; automation is paused.');
     if(this.player && !this.recoveryPromise) void this.reconnect().catch(()=>{});
   }
@@ -105,7 +114,8 @@ export class Engine {
         await this.refreshIndex(true);
         if(epoch!==this.connectionEpoch || this.transport!==transport)return;
         if(this.player.user_id!==userId)throw new GameError('The server restored a different account. Sign out and sign in again.',true);
-        if(this.player.battle){await this.join(this.player.battle);if(manualBattle && this.player.battle===previousBattle)this.battle.manual=true;}
+        if(this.draft){await transport.join(this.draft.id);this.draft.awaiting=false;transport.send(this.draft.id,9,{});}
+        else if(this.player.battle){await this.join(this.player.battle);if(manualBattle && this.player.battle===previousBattle)this.battle.manual=true;}
         else this.battle=null;
         this.log(this.uncertain?'Reconnected. A previous action is uncertain; check your battle/team and sign in again before automation.':this.battle?'Reconnected and restored your battle. Automation stays paused.':'Reconnected. Press Start when you are ready.');
       }catch(error){
@@ -118,6 +128,8 @@ export class Engine {
     this.recoveryPromise=recovery;return recovery;
   }
   updateConfig(value) {
+    if(this.draft||this.arenaCancelPromise||this.arenaQueue?.ticket)throw new Error('Finish the arena draft or cancel the queue before changing settings.');
+    if(this.battle&&value.arenaType!==undefined&&value.arenaType!==this.config.arenaType)throw new Error('Finish the current battle before changing arena mode.');
     if (this.running || this.busy || this.reconnecting) throw new Error('Pause and wait for the current request before changing settings.');
     if (this.battle && value.activity!==this.config.activity) throw new Error('Finish the current battle before changing activity.');
     const next=settings(value,this.catalog); this.save(next); this.config=next; this.cursor=0;
@@ -129,9 +141,13 @@ export class Engine {
     if (this.busy) throw new Error('Wait for the current game request.');
     if (this.uncertain) throw new Error('A request had an uncertain result. Sign out and back in to check the server state before restarting.');
     if (this.config.activity==='wild' && !this.config.names.length && !(this.config.trainSelected && this.config.replacementNames.length) && !this.battle) throw new Error('Select at least one search target.');
-    if (this.config.trainSelected && !this.config.replacementNames.length) throw new Error('Add species to the separate replacement list before training selected copies.');
+    if (this.config.activity!=='arena' && this.config.trainSelected && !this.config.replacementNames.length) throw new Error('Add species to the separate replacement list before training selected copies.');
     if (this.battle?.manual) throw new Error('This selected target is a manual battle. Finish it in the Battle tab.');
-    if (this.battle?.type && !['Wild','Campaign'].includes(this.battle.type)) throw new Error('This battle type supports manual control only.');
+    if (this.battle?.type && !['Wild','Campaign','Default','Platinum','Random'].includes(this.battle.type)) throw new Error('This battle type supports manual control only.');
+    if(this.arenaCancelPromise)throw new Error('Wait for arena queue cancellation.');
+    if(this.config.activity==='arena'&&!this.battle&&!this.draft){
+      if(this.arenaRun.type!==this.config.arenaType||this.arenaRun.battles>=this.config.arenaBattleLimit)this.arenaRun={battles:0,wins:0,losses:0,type:this.config.arenaType};
+    }
     if (!this.battle && this.wins>=this.config.campaignLimit) this.wins=0;
     if(this.lastStop)this.lastStop.resumedAt=new Date().toISOString();
     this.running=true; this.log('Automation started.');
@@ -141,10 +157,12 @@ export class Engine {
     await this.transport.join(id);
   }
   async tick() {
-    if (this.busy || this.reconnecting || !this.running || !this.transport?.connected || (!this.battle && Date.now()<(this.nextCycle||0))) return;
+    if (this.busy || this.reconnecting || !this.running || !this.transport?.connected || (!this.battle&&!this.draft&&(!this.arenaQueue||this.arenaQueue.cancelled||this.arenaQueue.matched)&&Date.now()<(this.nextCycle||0))) return;
     this.busy=true;
     try {
-      if(this.config.trainSelected)await this.refreshIndex();
+      if(this.draft){await this.draftTick();return;}
+      if(this.arenaQueue&&!this.arenaQueue.cancelled&&!this.arenaQueue.matched){await this.arenaQueueTick();return;}
+      if(this.config.trainSelected&&this.config.activity!=='arena')await this.refreshIndex();
       if (this.battle) {
         if (this.battle.awaitingAction && Date.now()-this.battle.actionSent>25000) throw new GameError('Battle action timed out. No action was resent.',true);
         if (Date.now()-this.battle.updated>45000 || (this.battle.joining && Date.now()-this.battle.created>30000)) throw new GameError('Battle response timed out. Inspect the battle before reconnecting.',true);
@@ -154,6 +172,7 @@ export class Engine {
       await this.refresh();
       if (!this.running) return;
       if (this.player.battle) { await this.join(this.player.battle); this.stop('An existing battle was found. Continue it manually.'); return; }
+      if(this.config.activity==='arena'){await this.queueArena();return;}
       const selectedPlan=this.config.trainSelected?selectedTrainingPlan(this.player,this.config.replacementNames,this.catalog,this.metadata,this.collectionIndex):null;
       if(this.config.activity==='wild' && !this.config.names.length && !selectedPlan?.traineeIds.length && !selectedPlan?.needsCapture.length){this.stop('All hunt targets collected; no selected trainees or upgrade targets remain.');return;}
       if (selectedPlan?.changed) {
@@ -286,19 +305,116 @@ export class Engine {
     if(!confirmed)throw new GameError('Healing was accepted but healthy team HP did not refresh. Sign in again to check the team.',true);
     this.log('Wild team healed with 10 virtue. Budget used: '+this.wildHealingSpent+' / '+this.config.wildHealBudget+'.');
   }
+  async queueArena(){
+    if(this.arenaRun.battles>=this.config.arenaBattleLimit){this.stop('Arena battle limit reached.');return;}
+    const type=this.config.arenaType,info=await this.loadArenaInfo(type);
+    if(info.info?.banned)throw new Error('Random Arena access is currently banned by the game.');
+    arenaEligibility(this.player,type,this.metadata,this.protocol.arena,{allowInjured:this.config.arenaAllowInjured});
+    if(!this.running)return;
+    const q=this.arenaQueue={type,ticket:null,started:Date.now(),status:'Joining queue',cancelled:false,matched:false};
+    const ticket=await this.transport.addArena(type);
+    if(this.arenaQueue!==q)return;
+    if(q.matched)return;
+    q.ticket=ticket;q.matchTicket=ticket;q.status='Searching for opponent';
+    if(!this.running){await this.cancelArenaQueue();return;}
+    this.log('Searching '+ARENAS[type].name+' for an opponent.');
+  }
+  async loadArenaInfo(type){
+    if(!isArena(type))throw new Error('Choose a supported arena.');
+    const transport=this.transport,epoch=this.connectionEpoch,info=await transport.rpc(ARENAS[type].rpc);
+    if(this.transport!==transport||this.connectionEpoch!==epoch||!this.player)throw new Error('Arena totals refresh cancelled.');
+    this.arenaRecords[type]=arenaTotals(type,info);
+    for(const member of info.team||[]){const raw=this.player.miscrits.find(m=>Number(m.id)===Number(member.id));if(raw&&Number.isFinite(member.chp))raw[raw.v===2?'c':'chp']=member.chp;}
+    return info;
+  }
+  async refreshArenaTotals(type){
+    if(!this.player||!this.transport?.connected||this.requiresLogin)throw new Error('Sign in before loading arena totals.');
+    if(this.busy||this.running||this.battle||this.draft||this.reconnecting||this.arenaCancelPromise)throw new Error('Pause and finish the current arena activity before refreshing totals.');
+    this.busy=true;
+    try{await this.loadArenaInfo(type);}finally{this.busy=false;}
+  }
+  cancelArenaQueue(){
+    if(this.arenaCancelPromise)return this.arenaCancelPromise;
+    const q=this.arenaQueue;
+    if(!q||!q.ticket||q.cancelled||q.matched)return Promise.resolve();
+    q.cancelled=true;q.status='Cancelling queue';const ticket=q.ticket,transport=this.transport,epoch=this.connectionEpoch;
+    this.arenaCancelPromise=(async()=>{
+      try{await transport.removeArena(ticket);if(epoch===this.connectionEpoch&&!q.matched){q.ticket=null;q.status='Queue cancelled';}}
+      catch(error){if(epoch!==this.connectionEpoch)return;if(!q.matched){q.ticket=null;q.status='Cancellation unconfirmed';error.uncertain=true;throw error;}}
+    })().finally(()=>{this.arenaCancelPromise=null;});
+    return this.arenaCancelPromise;
+  }
+  async arenaQueueTick(){
+    const q=this.arenaQueue,elapsed=Date.now()-q.started;
+    if(elapsed>=120000){await this.cancelArenaQueue();q.cancelled=true;this.stop('Arena opponent search timed out after 120 seconds.');return;}
+    if(q.type!=='Random'&&q.ticket&&elapsed>=Number(this.protocol.arena?.bot_timeout||91)*1000){
+      const ticket=q.ticket;q.ticket=null;q.status='Waiting for native bot assignment';
+      // Native Default/Platinum queues remove their ticket after BOT_TIMEOUT; the server sends notification 42.
+      try{await this.transport.removeArena(ticket);}catch(error){if(!q.matched)throw error;}
+    }
+  }
+  async arenaMatched(event){
+    const q=this.arenaQueue,id=event.data?.match_id;
+    if(!q||q.matched||this.battle||this.draft||typeof id!=='string'||!id||Date.now()-q.started>150000)return;
+    if(event.kind==='matched'&&(q.matchTicket||q.ticket)&&event.data.ticket!==(q.matchTicket||q.ticket))return;
+    if(event.kind==='bot'&&q.type==='Random')return;
+    q.matched=true;q.ticket=null;q.status='Opponent found';
+    if(q.type==='Random'){
+      this.draft={id,stage:'loading',pool:[],banned:[],submitted:{},started:Date.now(),updated:Date.now(),awaiting:false};
+      await this.transport.join(id);this.transport.send(id,0,{});this.log('Random Arena draft joined.');
+    }else{await this.join(id);this.log(ARENAS[q.type].name+' opponent found.');}
+  }
+  async draftTick(){
+    const d=this.draft;
+    if(Date.now()-d.updated>50000)throw new GameError('Random Arena draft timed out. Inspect the draft before reconnecting.',true);
+    if(d.stage==='loading'&&!d.restartSent&&Date.now()-d.started>5000){d.restartSent=true;this.transport.send(d.id,9,{});return;}
+    if(!['ban','pick'].includes(d.stage)||d.awaiting||d.submitted[d.stage])return;
+    const count=d.stage==='ban'?6:4;
+    await this.draftAction(d.stage,draftChoices(d.pool,d.stage==='pick'?d.banned:[],this.metadata,count),true);
+  }
+  async draftAction(kind,ids,automatic=false){
+    const d=this.draft;
+    if(!d||!this.transport?.connected||this.reconnecting)throw new Error('No connected Random Arena draft.');
+    if(!automatic&&this.running)throw new Error('Pause automation before choosing a draft manually.');
+    if(kind!==d.stage||!['ban','pick'].includes(kind)||d.awaiting||d.submitted[kind])throw new Error('Waiting for the next Random Arena stage.');
+    const count=kind==='ban'?6:4;
+    if(!Array.isArray(ids)||ids.length!==count||new Set(ids).size!==count||ids.some(id=>!Number.isInteger(id)||!d.pool.includes(id)||(kind==='pick'&&d.banned.includes(id))))throw new Error('Select exactly '+count+' available draft species.');
+    d.awaiting=true;d.submitted[kind]=true;
+    this.transport.send(d.id,kind==='ban'?2:3,{[kind==='ban'?'bans':'picks']:ids});
+    this.log((automatic?'Auto':'Manual')+' Random Arena '+kind+': '+ids.map(id=>this.metadata.get(id)?.name||this.metadata.get(id)?.names?.[0]||id).join(', '));
+  }
+  async receiveDraft(id,opcode,data){
+    const d=this.draft;if(!d||d.id!==id)return;d.updated=Date.now();
+    if(opcode===1||opcode===9){
+      const pool=opcode===9?data.pool:data;draftChoices(pool,[],this.metadata,6);
+      if(d.pool.length&&JSON.stringify(d.pool)!==JSON.stringify(pool))throw new GameError('Random Arena draft pool changed unexpectedly.',true);
+      d.pool=[...pool];if(d.stage==='loading')d.stage='ban';
+      d.deadline=Date.now()+Math.max(0,40-Number(opcode===9?data.time||0:0))*1000;
+    }else if(opcode===5){
+      if(!Array.isArray(data)||data.some(id=>!d.pool.includes(id)))throw new GameError('Invalid Random Arena bans.',true);
+      d.banned=[...new Set(data)];d.stage='pick';d.awaiting=Boolean(d.submitted.pick);d.deadline=Date.now()+40000;
+    }else if(opcode===8){d.stage='preparing';d.awaiting=true;}
+    else if(opcode===7){
+      if(typeof data.matchId!=='string'||!data.matchId||data.matchId===id)throw new GameError('Random Arena returned an invalid battle ID.',true);
+      d.stage='matched';await this.transport.leave(id);this.draft=null;await this.join(data.matchId);
+    }else if(opcode===4){this.draft=null;await this.transport.leave(id);this.stop('Random Arena draft time limit reached.');}
+    else if(opcode===-1)throw new GameError('Random Arena draft was rejected by the server.');
+  }
   async combat() {
     const b=this.battle;
-    if (b.joining || b.manual || b.awaitingAction || b.acted===b.serial) return;
+    if (b.joining || b.manual || b.finishing || b.awaitingAction || b.acted===b.serial) return;
     const families=b.type==='Wild' && this.config.mode==='capture_missing'?collectionFamilies(this.player):null;
     if(families)for(const family of b.keptFamilies||[])families.add(family);
-    const selectedPlan=this.config.trainSelected?selectedTrainingPlan(this.player,this.config.replacementNames,this.catalog,this.metadata,this.collectionIndex):null;
+    if(!['Wild','Campaign','Default','Platinum','Random'].includes(b.type)){this.stop('This battle type supports manual control only.');return;}
+    const selectedPlan=this.config.trainSelected&&b.type==='Wild'?selectedTrainingPlan(this.player,this.config.replacementNames,this.catalog,this.metadata,this.collectionIndex):null;
     const trainOwned=Boolean(selectedPlan?.traineeIds.length);
     const kept=this.config.captureLowRatedTargets?b.keptFamilies:b.keptQualifyingFamilies;
     const upgrades=selectedPlan?new Set(this.catalog.species.filter(s=>selectedPlan.needsCapture.includes(s.name) && !kept?.includes(s.id)).map(s=>s.id)):null;
-    const action=decision(b,this.config,this.catalog,{families,trainOwned,upgrades});
+    const action=isArena(b.type)&&this.config.arenaStrategy==='smart'?arenaDecision(b,this.metadata,this.protocol):decision(b,this.config,this.catalog,{families,trainOwned,upgrades});
     if (!action) return;
     if (action.action==='manual') { b.manual=true; this.stop('Selected Miscrit found. Battle paused for manual play.'); return; }
     if (action.action==='stop') { this.stop(action.reason); return; }
+    if(isArena(b.type)){b.strategyReason=action.reason||'Basic strategy: strongest available attack.';}
     await this.action(action.action,action.id,true);
   }
   async action(kind,id,automatic=false) {
@@ -321,33 +437,41 @@ export class Engine {
     if (kind==='capture' && (b.type!=='Wild' || b.foe.miscrits[0].attempts>0 || !(b.captureChance>0))) throw new Error('Free capture is unavailable. Paid retries are disabled.');
     b.acted=b.serial; b.awaitingAction=true; b.actionSent=Date.now();
     this.transport.send(b.id,opcodes[kind],['ability','switch'].includes(kind)?{id}:{});
+    if(automatic&&kind==='switch'&&isArena(b.type))b.arenaSwitchedSinceAttack=true;
     if(kind==='capture')this.stats.captureAttempts++;
     if (kind==='ability') b.attacks++;
     this.log((automatic?'Auto: ':'Manual: ')+kind+(id!==undefined?' '+id:''));
   }
   async receive(id,opcode,data) {
+    if(this.draft?.id===id){await this.receiveDraft(id,opcode,data);return;}
     const b=this.battle;
     if (!b || id!==b.id) return;
     b.updated=Date.now(); b.serial++;
     if(opcode===8 && b.joining && !b.player && !(data.actions?.length))return;
     if (opcode===0) {
       if (!data.player1?.miscrits?.length || !data.player2?.miscrits?.length) throw new GameError('Incomplete battle start.',true);
-      b.type=data.type; b.player=structuredClone(data.player1.user_id===this.player.user_id?data.player1:data.player2);
+      b.type=data.type;b.pvp=Boolean(data.pvp); b.player=structuredClone(data.player1.user_id===this.player.user_id?data.player1:data.player2);
       if(!b.countedEncounter){this.stats.encounters++;b.countedEncounter=true;}
       b.foe=structuredClone(data.player1.user_id===this.player.user_id?data.player2:data.player1);
       if (b.player.user_id!==this.player.user_id) throw new GameError('Battle does not belong to the signed-in account.',true);
       for (const side of [b.player,b.foe]) for (const member of side.miscrits) {
-        member.abilities=abilities(member,side,this.metadata,this.protocol,b.type==='Campaign');
-        member.turnStatuses={};
+        member.abilities=abilities(member,side,this.metadata,this.protocol,b.type==='Campaign'||b.pvp);
+        member.turnStatuses={};member.arenaEffects={};
         const original=this.player.miscrits.find(m=>m.id===member.id);
-        const enchanted=original?.enchants||original?.en||[];
-        for (const ability of member.abilities) if (side===b.player && enchanted.includes(ability.id)) {
+        const enchanted=b.type==='Random'?member.abilities.map(a=>a.id):(original?.enchants||original?.en||[]);
+        for (const ability of member.abilities) if ((side===b.player||b.type==='Random') && enchanted.includes(ability.id)) {
           ability.ap=Number(ability.ap||0)+Number(ability.enchant?.ap||0);
+          if(isArena(b.type)){
+            if(Number.isFinite(ability.enchant?.accuracy))ability.accuracy=(ability.accuracy??100)+ability.enchant.accuracy;
+            if(Number.isFinite(ability.enchant?.turns))ability.turns=(ability.turns||0)+ability.enchant.turns;
+            if(Array.isArray(ability.enchant?.additional))ability.additional=[...(ability.additional||[]),...structuredClone(ability.enchant.additional)];
+          }
           ability.complexEnchant=Object.keys(ability.enchant||{}).some(key=>!['ap','accuracy','desc'].includes(key));
         }
         member.attempts ||=0;
       }
       for(const side of [b.player,b.foe]){
+        if(isArena(b.type))for(const effect of Array.isArray(side.status)?side.status:[])if(effect.type){side.miscrits[0].arenaEffects[effect.type]=structuredClone(effect);if(effect.type==='Negate')side.miscrits[0].negated=true;}
         for(const effect of Array.isArray(side.status)?side.status:[])if(['Sleep','Confuse','Paralyze'].includes(effect.type))side.miscrits[0].turnStatuses[effect.type]=Number(effect.turns);
         this.statusFlags(side.miscrits[0]);
       }
@@ -362,8 +486,16 @@ export class Engine {
       if (opcode===1) this.switchTo(initiator,data.id,data.switches);
       if ([2,7,13].includes(opcode) && initiator) {
         const used=initiator.miscrits[0].abilities.find(a=>a.id===data.id);
-        if (used && (opcode!==13 || used.nativeCooldown>0)) used.recharge=used.nativeCooldown;
-        if (used?.remaining>0) used.remaining--;
+        if(isArena(b.type)){
+          const special=this.protocol.arena?.special_cooldowns?.[used?.type];
+          const cooldown=opcode===13?(used?.nativeCooldown===-1?0:special?.[1]||0):(used?.nativeCooldown===-1?-1:special?.[0]??used?.nativeCooldown??0);
+          if(used&&cooldown)used.recharge=cooldown;
+          if(used?.remaining>0&&cooldown)used.remaining--;
+          if(initiator===b.player)b.arenaSwitchedSinceAttack=false;
+        }else{
+          if (used && (opcode!==13 || used.nativeCooldown>0)) used.recharge=used.nativeCooldown;
+          if (used?.remaining>0) used.remaining--;
+        }
       }
       if (opcode===10) {
         const target=b.foe.miscrits[0]; target.captured=Boolean(data.captured); if (!data.captured) target.attempts++;
@@ -386,6 +518,7 @@ export class Engine {
       }
       if (opcode===4 && data.success) { await this.finish('fled',data); return; }
       if (opcode===-1 || opcode===14 || opcode===15) throw new GameError(data.msg || 'Battle server rejected an action. Automation paused.');
+      const arenaDamage={},arenaBattle=isArena(b.type);let arenaStateChanged=false;
       for (const action of data.actions || []) {
         if(action.type==='Special')continue; // Native client treats this as an informational effect.
         const supported=['Attack','Buff','Miss','Faint','ForceSwitch','Negate','Heal','Sleep','Confuse','Paralyze','Antiheal','Poison','Hot','Dot','AI','CI','SI','PI','Block','Barbed','Bleed','SwitchCurse','Ethereal','Disease','Bot','PoisonDamage','DotDamage','BleedDamage','SwitchCurseDamage','DiseaseDamage','BarbedDamage','BlockDamage','HotHeal','HotAntiheal','AntihealDamage','Immune','Woken','Cleanser','Purge','TimeBomb','TimeBombDamage','EtherealBlock'];
@@ -393,6 +526,11 @@ export class Engine {
         const side=[b.player,b.foe].find(s=>s.user_id===action.target);
         if (!side) throw new GameError('Battle action has an unknown target.',true);
         const member=side.miscrits[0];
+        if(arenaBattle){
+          this.arenaEffect(member,action);
+          if(['Buff','Negate','Purge','Cleanser','Bot','ForceSwitch','Faint'].includes(action.type))arenaStateChanged=true;
+          if(action.type==='Attack'&&Number.isFinite(action.damage)&&action.damage>0&&initiator&&side!==initiator){const key=`${initiator.miscrits[0].id}:${member.id}:${data.id}`;arenaDamage[key]=(arenaDamage[key]||0)+action.damage;}
+        }
         if (Number.isFinite(action.damage)) {
           member.chp=Math.max(0,Math.min(member.hp,member.chp-action.damage));
           if (opcode===2 && initiator===b.player && side===b.foe && action.type==='Attack') {
@@ -411,15 +549,26 @@ export class Engine {
           member.turnStatuses[action.type]=Number(action.turns);this.statusFlags(member);
         }
         if(action.type==='Woken'){delete member.turnStatuses.Sleep;this.statusFlags(member);}
-        if(action.type==='Cleanser'){member.turnStatuses={};this.statusFlags(member);}
+        if(action.type==='Cleanser'){
+          if(arenaBattle){delete member.turnStatuses.Confuse;delete member.turnStatuses.Paralyze;}
+          else member.turnStatuses={};
+          this.statusFlags(member);
+        }
         if (side===b.foe && ['Poison','Dot','TimeBomb','Bleed','Disease','Buff','Negate','Purge','Ethereal','Block'].includes(action.type)) b.damageRisk=true;
         if (side===b.player && ['Buff','Bot','Cleanser'].includes(action.type)) b.damageRisk=true;
+      }
+      if(arenaBattle){
+        if(arenaStateChanged)b.arenaDamage={};
+        else{b.arenaDamage||={};for(const [key,value]of Object.entries(arenaDamage))b.arenaDamage[key]=Math.min(b.arenaDamage[key]??Infinity,value);}
+        if(initiator&&!([1,6,14].includes(opcode)))initiator.switches=0;
+        if(data.turns===0)for(const side of [b.player,b.foe])for(const effect of Object.values(side.miscrits[0].arenaEffects||{}))if(['CI','SI','PI','AI','Antiheal','Bot','Ethereal'].includes(effect.type)&&effect.turns>0)effect.turns--;
       }
       if (data.turns===0 && !data.captured) for (const member of b.player.miscrits) for (const ability of member.abilities) if (ability.recharge>0) ability.recharge--;
       if(initiator){
         const member=initiator.miscrits[0];
         for(const type of Object.keys(member.turnStatuses))if(member.turnStatuses[type]>0)member.turnStatuses[type]--;
         this.statusFlags(member);
+        if(arenaBattle)for(const type of ['Sleep','Confuse','Paralyze'])if(member.arenaEffects?.[type])member.arenaEffects[type].turns=member.turnStatuses[type]||0;
       }
       if (opcode===12) b.winner=data.loser===b.player.user_id?b.foe.user_id:b.player.user_id;
       if (opcode===9 || opcode===12) { await this.finish('ended',data); return; }
@@ -440,8 +589,22 @@ export class Engine {
     if (index<0) throw new GameError('Server switch references an unknown teammate.',true);
     if (switches>3) side.miscrits[0].chp=Math.max(0,side.miscrits[0].chp-(15+(switches-4)*5));
     for (const a of side.miscrits[0].abilities) if (a.recharge>0) a.recharge=0;
-    const [member]=side.miscrits.splice(index,1); side.miscrits.unshift(member);member.turnStatuses={};this.statusFlags(member);
+    const previous=side.miscrits[0];previous.negated=false;previous.arenaEffects={};
+    side.switches=switches;
+    const [member]=side.miscrits.splice(index,1); side.miscrits.unshift(member);member.turnStatuses={};member.arenaEffects={};member.negated=false;this.statusFlags(member);
     if(side===this.battle?.foe){this.battle.attacks=0;this.battle.damageRisk=false;}
+  }
+  arenaEffect(member,action){
+    member.arenaEffects||={};
+    const type=({PoisonDamage:'Poison',DotDamage:'Dot',BleedDamage:'Bleed',DiseaseDamage:'Disease',HotHeal:'Hot',BlockDamage:'Block'})[action.type]||action.type;
+    if(['Negate','Poison','Dot','Bleed','Disease','Antiheal','Paralyze','Sleep','Confuse','CI','SI','PI','AI','Hot','Block','Ethereal','Barbed','SwitchCurse'].includes(type)){
+      member.arenaEffects[type]={...action,type};
+      if(type==='Negate')member.negated=true;
+      if(action.immunity>0){const immune={Sleep:'SI',Confuse:'CI',Paralyze:'PI',Antiheal:'AI'}[type];if(immune)member.arenaEffects[immune]={type:immune,turns:action.immunity};}
+    }
+    if(type==='Cleanser')for(const effect of ['Poison','Dot','Bleed','Disease','Antiheal','Paralyze','Confuse','SwitchCurse'])delete member.arenaEffects[effect];
+    if(type==='Purge'){for(const effect of ['Negate','Hot','Block','Ethereal','Barbed','CI','SI','PI','AI'])delete member.arenaEffects[effect];member.negated=false;}
+    if(type==='Woken')delete member.arenaEffects.Sleep;
   }
   statusFlags(member){
     member.turnStatuses ||= {};
@@ -474,6 +637,13 @@ export class Engine {
       if (won) { this.wins++; this.lastProgress=this.stageBefore??null; }
       else this.stop('Campaign stopped after a defeat or incomplete battle.');
     }
+    if(isArena(b.type)){
+      this.arenaRun.type ||= b.type;this.arenaRun.battles++;
+      if(won)this.arenaRun.wins++;else this.arenaRun.losses++;
+      if(!won&&this.config.arenaStopOnLoss)this.stop('Arena stopped after a defeat. Check your team before continuing.');
+      else if(this.arenaRun.battles>=this.config.arenaBattleLimit)this.stop('Arena battle limit reached.');
+      try{await this.loadArenaInfo(b.type);}catch(error){const previous=this.arenaRecords[b.type]||{type:b.type,name:ARENAS[b.type].name};this.arenaRecords[b.type]={...previous,error:'Arena totals could not refresh. Use Refresh totals when idle.'};}
+    }
     this.battle=null; await this.transport.leave(b.id); await this.refresh();
     this.log(reason==='fled'?'Returned from encounter.':won?'Battle won.':'Battle finished.');
   }
@@ -486,6 +656,7 @@ export class Engine {
     return {connected:Boolean(p && this.transport?.connected && !this.requiresLogin),reconnecting:this.reconnecting,requiresLogin:this.requiresLogin,connection:this.transport?.diagnostics?.()||{},busy:this.busy,running:this.running,uncertain:this.uncertain,status:this.status,selectedTraining,
       queue,lastStop:this.lastStop,sessionStats:this.stats.snapshot(),wildHealingSpent:this.wildHealingSpent,alerts:this.alerts,profiles:this.profiles.map(p=>({name:p.name})),
       config:this.config,wins:this.wins,events:this.events,history:this.history,collectionIndex:this.collectionIndex,
+      arena:{records:this.arenaRecords,queue:this.arenaQueue?{type:this.arenaQueue.type,status:this.arenaQueue.status,searching:!this.arenaQueue.cancelled&&!this.arenaQueue.matched,elapsedSeconds:Math.floor((Date.now()-this.arenaQueue.started)/1000)}:null,run:this.arenaRun},draft:this.draft?structuredClone(this.draft):null,
       player:p?{username:p.username,name:p.display_name||p.username,level:p.level,virtue:p.virtue,gold:p.gold,platinum:p.platinum,area:p.area,team:p.team_order.map(id=>roster.find(m=>m.id===id)).filter(Boolean),roster}:null,
       battle:this.battle ? structuredClone(this.battle) : null};
   }
