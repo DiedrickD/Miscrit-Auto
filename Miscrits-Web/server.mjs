@@ -51,7 +51,7 @@ export async function createApp({port=4318,fetchData=true,engine:provided}={}) {
     res.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' https://cdn.worldofmiscrits.com; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     if (req.headers.host!==expected || (req.headers.origin && req.headers.origin!==`http://${expected}`)) {json(res,403,{error:'Local access only.'});return;}
     const url=new URL(req.url,`http://${expected}`);
-    if (url.pathname==='/api/health' && req.method==='GET') {json(res,200,{app:'miscrits-browser',version:10,needsGame:false,connected:Boolean(engine.player&&engine.transport?.connected),reconnecting:Boolean(engine.reconnecting),running:Boolean(engine.running),busy:Boolean(engine.busy),activeBattle:Boolean(engine.battle)});return;}
+    if (url.pathname==='/api/health' && req.method==='GET') {json(res,200,{app:'miscrits-browser',version:11,needsGame:false,connected:Boolean(engine.player&&engine.transport?.connected),reconnecting:Boolean(engine.reconnecting),running:Boolean(engine.running),busy:Boolean(engine.busy),activeBattle:Boolean(engine.battle)});return;}
     if (url.pathname==='/api/bootstrap' && req.method==='GET') {
       const cookie=req.headers.cookie?.split('; ').find(c=>c.startsWith('mc_owner='))?.slice(9);
       if (ownerCookie && !safeEqual(cookie,ownerCookie)) {json(res,403,{error:'This backend is already open in another browser session. Use that window or restart the website backend.'});return;}

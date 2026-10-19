@@ -16,13 +16,13 @@
     },
     {
         "path":  "README.md",
-        "bytes":  13497,
-        "sha256":  "A90640A8A28D1BA32B85B10BC9AD70F03FF860B7789DB94FC1C099C37A9A8661"
+        "bytes":  13776,
+        "sha256":  "A7D50F845E977DA1A89BB0C100B6DF70313DDCA61A932281013DF19D31492E2C"
     },
     {
         "path":  "server.mjs",
         "bytes":  8970,
-        "sha256":  "392C48A1D9C4F21DAD7022E56451918DE13A575A291D80352460CBF4804B9468"
+        "sha256":  "4932020A360955A58CCF6869EBB4B8B254F6BDCE6B13DE2504F30483E3D08FBF"
     },
     {
         "path":  "SIZE-LIMITS.json",
@@ -41,13 +41,13 @@
     },
     {
         "path":  "dist/app.js",
-        "bytes":  39756,
-        "sha256":  "4B362F51BCDD25258FF1DBF0472A55438575ADBB994E9DBAE8C21DF0395F66EC"
+        "bytes":  42240,
+        "sha256":  "1AC4BE7F47E88904E07534482FB3653C1D0CF663ACA8AFC5FE2CC2C36C3BD841"
     },
     {
         "path":  "dist/index.html",
-        "bytes":  21378,
-        "sha256":  "31F030101189EBC0961D261557FDD081B8243544CBCB78DF2CFE5FF736EEE255"
+        "bytes":  22529,
+        "sha256":  "1C9F9EAC9BDEA18F5B9C09E05CBA1BDC8369546E47EA155C4A3A8E257F788851"
     },
     {
         "path":  "dist/mark.svg",
@@ -56,18 +56,18 @@
     },
     {
         "path":  "dist/style.css",
-        "bytes":  20105,
-        "sha256":  "2B1C9E9CF0EAA31D95437475AAE54BF3429E788676FE722D3A7332BB52013B80"
+        "bytes":  21090,
+        "sha256":  "52A62C4D3D982FB686EF2F790E881516AC61789431D9C02BBFAAEF29301DA0C9"
     },
     {
         "path":  "lib/engine.mjs",
-        "bytes":  38610,
-        "sha256":  "3AD4D14BD12F2504D536139A8959DEBB4766BF812DBD1A0EBE758D6783479841"
+        "bytes":  39348,
+        "sha256":  "5271152E0AFB56C95C093359324E10F4125BCCE7E45B64EE82624D911BBC4455"
     },
     {
         "path":  "lib/model.mjs",
-        "bytes":  13837,
-        "sha256":  "0C4703B3BAE1911DAA617C99E962DBE7F8218AF98897098FC4D694F63E8DE299"
+        "bytes":  14149,
+        "sha256":  "2BF74201FAEE9331CA9C023C0AF606E0C1AAC002D40D105B0C9952938F0B1877"
     },
     {
         "path":  "lib/transport.mjs",
@@ -76,8 +76,8 @@
     },
     {
         "path":  "lib/workflow.mjs",
-        "bytes":  3289,
-        "sha256":  "6D4FA21702AC9D44554FF01BEDFD0BAB58A5A0DD412F9976B8F8FF946E1D102A"
+        "bytes":  7317,
+        "sha256":  "C635F2E1B7F138EAF64584BCFA0BCB41E08222F610ACE1AA97D2472C9B625556"
     },
     {
         "path":  "runtime/LICENSE.txt",
@@ -137,7 +137,7 @@
     {
         "path":  "test/server.test.mjs",
         "bytes":  2127,
-        "sha256":  "E47A17EFEDCC3456DDA439947B16AD5FA8FDE178EF3056B8EB586304F5329F8F"
+        "sha256":  "E4FD81837BE9AD38F4FE6F0A1D106C2E1B52C2015FA4D07188485A27D01412DB"
     },
     {
         "path":  "test/target-removal.test.mjs",
@@ -156,8 +156,8 @@
     },
     {
         "path":  "test/workflow.test.mjs",
-        "bytes":  15100,
-        "sha256":  "720D544F6555E89B7C212C3D147BC7F91E272BE6B25EADEA83ED278990C6B0B0"
+        "bytes":  22761,
+        "sha256":  "3410917D371CB597D1E12EF1648879EB6F91BDBF22581CFB7AD457B0D0017868"
     },
     {
         "path":  "vendor/ws/browser.js",

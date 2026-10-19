@@ -23,7 +23,7 @@ export class Engine {
   stop(message='Automation paused. Manual battle controls remain available.',details={}) {
     const wasRunning=this.running;this.running=false;this.log(message);
     this.lastStop={time:new Date().toISOString(),message,...stopAdvice(message,{...details,uncertain:this.uncertain,battle:Boolean(this.battle)}),rpcId:details.rpcId||'',uncertain:this.uncertain,activity:this.config.activity,
-      location:details.location||(this.currentSearch?{map:this.currentSearch.location,area:this.currentSearch.area_id,object:this.currentSearch.object_id}:null),battle:this.battle?.type||'',resumedAt:null};
+      location:details.location||(this.config.activity==='wild'&&this.currentSearch?{map:this.currentSearch.location,area:this.currentSearch.area_id,object:this.currentSearch.object_id}:null),battle:this.battle?.type||'',resumedAt:null};
     if(wasRunning)this.notify('stopped',message);
   }
   notify(kind,message){if(!this.config.notifyEvents)return;this.alerts.unshift({id:++this.alertId,time:new Date().toISOString(),kind,message});this.alerts.length=Math.min(this.alerts.length,100);}

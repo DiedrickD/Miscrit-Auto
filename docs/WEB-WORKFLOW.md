@@ -1,8 +1,20 @@
-# Workflow features 2–6
+# Workflow features
 
 Open Workflow in the sidebar. Controls use the existing local authenticated backend, with the same owner-cookie, CSRF and origin restrictions. Save changes before Start. A backend restart is needed to load this release; existing settings and history remain intact.
 
 ## Live target queue
+
+### Manual hunt priority
+
+In Hunt, use the up/down buttons beside a species to reorder the hunt route and mark one species with **Main**. Save hunt settings while paused, then Start. Manual hunt names come before automatically appended training-upgrade targets. Without Main, available objects rotate in this saved order. With Main, all available objects that include the primary species are considered first, retaining route rotation within those objects. While they cool down or are unavailable, searches fall back to other ready targets. A shared object can serve multiple species. Priority changes the search destination, not random spawn odds.
+
+Clear Main by clicking it again. Removing that species or clearing all hunt targets clears its Main flag. Confirmed capture removal also clears it; the separate tier selection stays intact for a rating-17+ upgrade. Settings and saved profiles preserve order and Main. Team-training selection still follows its existing tier/rating rules.
+
+### Stop report
+
+The status banner's **Stop report** button opens Workflow. **Why automation stopped** shows the latest reason, time, activity, battle type, request ID when available, and current search object. Failed movement reports the attempted destination. Guidance covers connection/session recovery, insufficient virtue, healing budget, unavailable routes, collection index, manual encounters, training/team problems and completed runs. Unknown failures keep the original message with general inspection guidance; the app does not invent an exact server cause.
+
+An uncertain action takes precedence over other suggestions and requires inspection plus sign-out/sign-in before restarting; no action is automatically repeated. Guidance itself performs no game actions. The report survives subsequent status messages, browser refresh and resuming, with a resumed label. It is held in backend memory for the current sign-in session and resets at new sign-in/backend restart. The next stop replaces it; Activity log retains recent events.
 
 Shows the current encounter or last searched object, next available mapped object, and target family status. The queue derives its order from the same saved settings, selected-training plan, route planner, cursor and cooldown map as the engine. It does not advance the cursor or send game requests. Targets explain training upgrades, cooldown waits, unavailable daily routes/map access and completed families. Campaign selection is labeled separately. The next object predicts the search destination, not which random encounter will spawn.
 
@@ -30,6 +42,6 @@ Counters reset on sign-in/backend restart, or manually while paused outside batt
 
 ## Validation
 
-118 automated checks pass. Workflow coverage includes optional healing, insufficient virtue/budget, one request in flight, late pause, uncertain/rejected results, unchanged team/HP verification, profile validation/replacement/reload/failure cases, queue prediction versus actual search payload, native XP accounting, notification deduplication and opt-in browser delivery, counters and virtue budget separation, authenticated HTTP actions and workflow rendering.
+126 automated checks pass. Workflow coverage includes optional healing, insufficient virtue/budget, one request in flight, late pause, uncertain/rejected results, unchanged team/HP verification, profile validation/replacement/reload/failure cases, queue prediction versus actual search payload, native XP accounting, notification deduplication and opt-in browser delivery, counters and virtue budget separation, authenticated HTTP actions and workflow rendering. Additional coverage checks saved target order/Main, priority fallback during cooldown, actual search agreement, clearing Main after capture, unsaved reorder controls, retained stop reasons and request context, failed movement destinations, recovery advice and safe text rendering. These new behaviors were verified offline; no gameplay mutations were needed.
 
 A read-only live check with the authorized dummy account loaded `get_player` and `get_player_seen`, produced a next object in Forest and an empty set of gameplay counters, with wild healing disabled. It sent no searches, team mutations or heals and spent no virtue. Report: `validation/web-workflow-live.json`. Actual healing was not forced by deliberately fainting teammates. Desktop notification delivery and rendered desktop/mobile layout could not be visually verified because computer-use/browser automation surfaces were unavailable in this session. Existing native gameplay validation remains separate.
