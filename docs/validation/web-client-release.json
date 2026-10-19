@@ -4,21 +4,21 @@
     "hosting":  "local loopback backend, not a public domain",
     "backend_health":  {
                            "app":  "miscrits-browser",
-                           "version":  10,
+                           "version":  11,
                            "needsGame":  false,
-                           "connected":  true,
+                           "connected":  false,
                            "reconnecting":  false,
                            "running":  false,
                            "busy":  false,
                            "activeBattle":  false
                        },
-    "package_bytes":  1980643324,
-    "script_package_bytes":  1893082453,
-    "browser_project_bytes":  87560871,
+    "package_bytes":  1980668773,
+    "script_package_bytes":  1893090264,
+    "browser_project_bytes":  87578509,
     "within_script_2gb":  true,
     "within_browser_10gb":  true,
     "native_game_running":  false,
-    "automated_tests":  118,
+    "automated_tests":  126,
     "automated_failures":  0,
     "test_log":  "docs/validation/web-client-tests.log",
     "user_confirmed":  [
@@ -57,5 +57,6 @@
     "duplicate_training_check":  "Official fourth-evolution capture flags and any owned level-30+ copy block repeated family training.",
     "collection_dashboard":  "Read-only frontend: tier progress, owned/missing, best rating, copy lists, index/roster completion, combined filters and pagination; frontend behavior tested, visual inspection unavailable.",
     "workflow_live_report":  "docs/validation/web-workflow-live.json",
-    "workflow_validation":  "Read-only queue verified live. Healing, profiles, notifications and stats covered offline; live heal and browser popup delivery remain unverified."
+    "workflow_validation":  "Read-only queue verified live. Healing, profiles, notifications and stats covered offline; live heal and browser popup delivery remain unverified.",
+    "manual_priority_and_stop_reports":  "Target order and Main persist in settings/profiles; Main falls back during cooldowns. Latest stop retains reason, request/location context and guidance until next stop/sign-in. Verified offline including engine search payloads and frontend behavior; rendered layout not visually inspected."
 }
