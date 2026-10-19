@@ -1,0 +1,490 @@
+[
+  {
+    "time": "2026-10-19T12:49:23.418Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:41:10.720Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:40:55.162Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:40:43.062Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:40:28.910Z",
+    "kind": "training",
+    "message": "Light Thorasher: level 19 → 20 with earned XP",
+    "name": "Light Thorasher",
+    "rating": 17
+  },
+  {
+    "time": "2026-10-19T11:40:25.288Z",
+    "kind": "training",
+    "message": "Dark Sizzlelash: level 19 → 20 with earned XP",
+    "name": "Dark Sizzlelash",
+    "rating": 17
+  },
+  {
+    "time": "2026-10-19T11:40:23.613Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:40:13.221Z",
+    "kind": "training",
+    "message": "Blighted Dandylion: level 19 → 20 with earned XP",
+    "name": "Blighted Dandylion",
+    "rating": 18
+  },
+  {
+    "time": "2026-10-19T11:40:11.543Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:39:46.335Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:39:34.290Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:39:22.168Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:39:18.578Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:38:50.967Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:38:49.450Z",
+    "kind": "capture",
+    "message": "Drilldent captured",
+    "name": "Drilldent",
+    "rating": 14
+  },
+  {
+    "time": "2026-10-19T11:38:35.074Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:38:24.078Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:38:16.835Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:38:09.751Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:37:51.494Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:37:37.096Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:37:12.844Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:37:05.841Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:37:04.324Z",
+    "kind": "capture",
+    "message": "Quirk captured",
+    "name": "Quirk",
+    "rating": 13
+  },
+  {
+    "time": "2026-10-19T11:36:58.461Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:36:47.455Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:36:40.267Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:36:25.809Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:36:14.962Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:36:04.112Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:35:53.232Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:35:42.133Z",
+    "kind": "battle",
+    "message": "Wild: fled"
+  },
+  {
+    "time": "2026-10-19T11:35:31.716Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T11:35:30.196Z",
+    "kind": "capture",
+    "message": "Snortus captured",
+    "name": "Snortus",
+    "rating": 14
+  },
+  {
+    "time": "2026-10-19T11:02:02.118Z",
+    "kind": "training",
+    "message": "Flameling: level 6 → 7 with earned XP",
+    "name": "Flameling",
+    "rating": 13
+  },
+  {
+    "time": "2026-10-19T11:01:58.488Z",
+    "kind": "training",
+    "message": "Cubsprout: level 6 → 7 with earned XP",
+    "name": "Cubsprout",
+    "rating": 14
+  },
+  {
+    "time": "2026-10-19T11:01:54.885Z",
+    "kind": "training",
+    "message": "Glaucos: level 6 → 7 with earned XP",
+    "name": "Glaucos",
+    "rating": 16
+  },
+  {
+    "time": "2026-10-19T11:01:53.373Z",
+    "kind": "battle",
+    "message": "Campaign: victory"
+  },
+  {
+    "time": "2026-10-19T11:01:49.736Z",
+    "kind": "battle",
+    "message": "Campaign: victory"
+  },
+  {
+    "time": "2026-10-19T11:01:46.190Z",
+    "kind": "battle",
+    "message": "Campaign: victory"
+  },
+  {
+    "time": "2026-10-19T11:01:40.367Z",
+    "kind": "training",
+    "message": "Flameling: level 5 → 6 with earned XP",
+    "name": "Flameling",
+    "rating": 13
+  },
+  {
+    "time": "2026-10-19T11:01:36.730Z",
+    "kind": "training",
+    "message": "Cubsprout: level 5 → 6 with earned XP",
+    "name": "Cubsprout",
+    "rating": 14
+  },
+  {
+    "time": "2026-10-19T11:01:33.102Z",
+    "kind": "training",
+    "message": "Glaucos: level 5 → 6 with earned XP",
+    "name": "Glaucos",
+    "rating": 16
+  },
+  {
+    "time": "2026-10-19T11:01:31.596Z",
+    "kind": "battle",
+    "message": "Campaign: victory"
+  },
+  {
+    "time": "2026-10-19T11:01:27.961Z",
+    "kind": "battle",
+    "message": "Campaign: victory"
+  },
+  {
+    "time": "2026-10-19T11:01:24.353Z",
+    "kind": "battle",
+    "message": "Campaign: victory"
+  },
+  {
+    "time": "2026-10-19T11:01:18.600Z",
+    "kind": "training",
+    "message": "Flameling: level 4 → 5 with earned XP",
+    "name": "Flameling",
+    "rating": 13
+  },
+  {
+    "time": "2026-10-19T11:01:14.964Z",
+    "kind": "training",
+    "message": "Cubsprout: level 4 → 5 with earned XP",
+    "name": "Cubsprout",
+    "rating": 14
+  },
+  {
+    "time": "2026-10-19T11:01:11.352Z",
+    "kind": "training",
+    "message": "Glaucos: level 4 → 5 with earned XP",
+    "name": "Glaucos",
+    "rating": 16
+  },
+  {
+    "time": "2026-10-19T11:01:09.846Z",
+    "kind": "battle",
+    "message": "Campaign: victory"
+  },
+  {
+    "time": "2026-10-19T11:01:06.430Z",
+    "kind": "battle",
+    "message": "Campaign: victory"
+  },
+  {
+    "time": "2026-10-19T11:01:02.602Z",
+    "kind": "battle",
+    "message": "Campaign: victory"
+  },
+  {
+    "time": "2026-10-19T10:52:56.204Z",
+    "kind": "training",
+    "message": "Flameling: level 3 → 4 with earned XP",
+    "name": "Flameling",
+    "rating": 13
+  },
+  {
+    "time": "2026-10-19T10:52:52.594Z",
+    "kind": "training",
+    "message": "Cubsprout: level 3 → 4 with earned XP",
+    "name": "Cubsprout",
+    "rating": 14
+  },
+  {
+    "time": "2026-10-19T10:52:48.964Z",
+    "kind": "training",
+    "message": "Glaucos: level 3 → 4 with earned XP",
+    "name": "Glaucos",
+    "rating": 16
+  },
+  {
+    "time": "2026-10-19T10:52:47.857Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:52:46.343Z",
+    "kind": "capture",
+    "message": "Shellbee captured",
+    "name": "Shellbee",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:52:29.721Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:52:28.204Z",
+    "kind": "capture",
+    "message": "Dark Quirk captured",
+    "name": "Dark Quirk",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:52:15.212Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:52:13.694Z",
+    "kind": "capture",
+    "message": "Whik captured",
+    "name": "Whik",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:52:05.458Z",
+    "kind": "training",
+    "message": "Flameling: level 2 → 3 with earned XP",
+    "name": "Flameling",
+    "rating": 13
+  },
+  {
+    "time": "2026-10-19T10:52:01.837Z",
+    "kind": "training",
+    "message": "Cubsprout: level 2 → 3 with earned XP",
+    "name": "Cubsprout",
+    "rating": 14
+  },
+  {
+    "time": "2026-10-19T10:51:58.219Z",
+    "kind": "training",
+    "message": "Glaucos: level 2 → 3 with earned XP",
+    "name": "Glaucos",
+    "rating": 16
+  },
+  {
+    "time": "2026-10-19T10:51:57.128Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:51:55.585Z",
+    "kind": "capture",
+    "message": "Quirk captured",
+    "name": "Quirk",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:51:49.828Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:51:48.314Z",
+    "kind": "capture",
+    "message": "Whik captured",
+    "name": "Whik",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:51:14.861Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:51:13.342Z",
+    "kind": "capture",
+    "message": "Quirk captured",
+    "name": "Quirk",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:51:05.112Z",
+    "kind": "training",
+    "message": "Flameling: level 1 → 2 with earned XP",
+    "name": "Flameling",
+    "rating": 13
+  },
+  {
+    "time": "2026-10-19T10:51:01.465Z",
+    "kind": "training",
+    "message": "Cubsprout: level 1 → 2 with earned XP",
+    "name": "Cubsprout",
+    "rating": 14
+  },
+  {
+    "time": "2026-10-19T10:42:42.968Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:42:41.453Z",
+    "kind": "capture",
+    "message": "Dark Shellbee captured",
+    "name": "Dark Shellbee",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:42:35.717Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:42:34.200Z",
+    "kind": "capture",
+    "message": "Cubsprout captured",
+    "name": "Cubsprout",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:42:06.746Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:42:05.228Z",
+    "kind": "capture",
+    "message": "Hotfoot captured",
+    "name": "Hotfoot",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:41:59.114Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:41:34.151Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:41:32.634Z",
+    "kind": "capture",
+    "message": "Snortus captured",
+    "name": "Snortus",
+    "rating": 0
+  },
+  {
+    "time": "2026-10-19T10:41:26.518Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:39:00.836Z",
+    "kind": "battle",
+    "message": "Wild: victory"
+  },
+  {
+    "time": "2026-10-19T10:38:59.328Z",
+    "kind": "capture",
+    "message": "Flameling captured",
+    "name": "Flameling",
+    "rating": 0
+  }
+]

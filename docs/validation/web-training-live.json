@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-19",
+  "records": [
+    {
+      "stage": "preflight",
+      "active_battle": false,
+      "team_levels": [
+        30,
+        1,
+        1,
+        1
+      ],
+      "team_xp": [
+        199,
+        10,
+        10,
+        10
+      ],
+      "eligible_count": 3
+    },
+    {
+      "stage": "free_level_verified",
+      "before": 1,
+      "after": 2,
+      "platinum_spent": 0,
+      "virtue_spent": 0,
+      "active_battle": false
+    },
+    {
+      "stage": "passed",
+      "rpc_names": [
+        "get_player",
+        "get_player",
+        "xp_train",
+        "get_player"
+      ]
+    }
+  ]
+}

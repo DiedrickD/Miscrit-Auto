@@ -1,0 +1,61 @@
+{
+    "date":  "2026-10-19",
+    "url":  "http://127.0.0.1:4318",
+    "hosting":  "local loopback backend, not a public domain",
+    "backend_health":  {
+                           "app":  "miscrits-browser",
+                           "version":  10,
+                           "needsGame":  false,
+                           "connected":  true,
+                           "reconnecting":  false,
+                           "running":  false,
+                           "busy":  false,
+                           "activeBattle":  false
+                       },
+    "package_bytes":  1980643324,
+    "script_package_bytes":  1893082453,
+    "browser_project_bytes":  87560871,
+    "within_script_2gb":  true,
+    "within_browser_10gb":  true,
+    "native_game_running":  false,
+    "automated_tests":  118,
+    "automated_failures":  0,
+    "test_log":  "docs/validation/web-client-tests.log",
+    "user_confirmed":  [
+                           "Authenticated login",
+                           "Encounter search",
+                           "Manual browser battle controls"
+                       ],
+    "live_gameplay_verified":  [
+                                   "Fresh wild search",
+                                   "Normal-threshold weakening/capture/keep",
+                                   "Free capture failure followed by flee",
+                                   "One campaign stage victory with server progress observed",
+                                   "One earned-XP level-up confirmed by server with no platinum or virtue spent"
+                               ],
+    "live_gameplay_reports":  [
+                                  "docs/validation/web-gameplay-capture.json",
+                                  "docs/validation/web-gameplay-wild.json",
+                                  "docs/validation/web-gameplay-campaign.json",
+                                  "docs/validation/web-training-live.json"
+                              ],
+    "live_validation_remaining":  [
+                                      "Virtue heal trigger: dummy team did not have two fainted members",
+                                      "Level-35 replacement trigger: dummy team levels were 30 and 1",
+                                      "Collection capture and Exotic-first rating-17+ training workflow: covered offline, not run end-to-end on the live account",
+                                      "Other campaign stages and special ability combinations"
+                                  ],
+    "visual_qa":  "Browser automation surfaces unavailable; layout not visually inspected",
+    "original_steam_sha256":  "27AC3C9E6D46ED726FC68A873C26DC6E971950395252EDDE4C1F0BF531F6E7F0",
+    "source_manifest":  "Miscrits-Web/SOURCE-MANIFEST.json",
+    "connection_fix":  "WebSocket control-frame heartbeat, refresh-token recovery, restored authoritative battle, automation paused after reconnect.",
+    "connection_live_reports":  [
+                                    "docs/validation/web-connection-soak.json",
+                                    "docs/validation/web-connection-live.json"
+                                ],
+    "collection_index_live_report":  "docs/validation/web-index-live.json",
+    "duplicate_training_check":  "Official fourth-evolution capture flags and any owned level-30+ copy block repeated family training.",
+    "collection_dashboard":  "Read-only frontend: tier progress, owned/missing, best rating, copy lists, index/roster completion, combined filters and pagination; frontend behavior tested, visual inspection unavailable.",
+    "workflow_live_report":  "docs/validation/web-workflow-live.json",
+    "workflow_validation":  "Read-only queue verified live. Healing, profiles, notifications and stats covered offline; live heal and browser popup delivery remain unverified."
+}

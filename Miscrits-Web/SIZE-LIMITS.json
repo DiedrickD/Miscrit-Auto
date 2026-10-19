@@ -1,0 +1,5 @@
+{
+  "browser_project": {"directory": "Miscrits-Web", "maximum_bytes": 10000000000},
+  "original_script_package": {"directory": "..", "exclude": ["Miscrits-Web"], "maximum_bytes": 2000000000},
+  "source": "User clarification: browser version max 10 GB; original script package max 2 GB."
+}

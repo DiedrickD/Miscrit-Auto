@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-19",
+  "records": [
+    {
+      "stage": "workflow_read_only_verified",
+      "connected": true,
+      "queue_targets": 1,
+      "next_location": "forest",
+      "next_area": 1,
+      "next_object": 0,
+      "searches": 0,
+      "captures": 0,
+      "wild_healing_enabled": false,
+      "virtue_spent": 0,
+      "rpc_names": [
+        "get_player",
+        "get_player_seen"
+      ]
+    }
+  ]
+}

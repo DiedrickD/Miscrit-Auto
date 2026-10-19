@@ -1,0 +1,89 @@
+{
+    "date":  "2026-10-19",
+    "records":  [
+                    {
+                        "stage":  "preflight",
+                        "connected":  true,
+                        "active_battle":  false,
+                        "owned_count":  9,
+                        "team_levels":  [
+                                            30,
+                                            1
+                                        ],
+                        "fainted":  0,
+                        "can_virtue_heal":  true,
+                        "location":  "Forest",
+                        "area":  1,
+                        "search_stops":  3,
+                        "campaign_stage":  0,
+                        "campaign_attempts":  0
+                    },
+                    {
+                        "stage":  "battle_frame",
+                        "opcode":  0,
+                        "keys":  [
+                                     "type",
+                                     "pvp",
+                                     "player1",
+                                     "player2",
+                                     "capture_chance",
+                                     "next_turn"
+                                 ],
+                        "type":  "Campaign"
+                    },
+                    {
+                        "stage":  "encounter",
+                        "type":  "Campaign",
+                        "foe":  "Hydroseal",
+                        "chance":  0
+                    },
+                    {
+                        "stage":  "action",
+                        "kind":  "ability",
+                        "automatic":  true
+                    },
+                    {
+                        "stage":  "battle_frame",
+                        "opcode":  2,
+                        "keys":  [
+                                     "id",
+                                     "actions",
+                                     "user_id",
+                                     "turns",
+                                     "winner",
+                                     "next_turn"
+                                 ]
+                    },
+                    {
+                        "stage":  "battle_frame",
+                        "opcode":  9,
+                        "keys":  [
+                                     "success",
+                                     "\u003cplayer\u003e"
+                                 ]
+                    },
+                    {
+                        "stage":  "battle_completed",
+                        "activity":  "campaign",
+                        "outcome":  "ended",
+                        "wins":  1,
+                        "records":  [
+                                        {
+                                            "kind":  "battle",
+                                            "message":  "Campaign: victory"
+                                        }
+                                    ]
+                    },
+                    {
+                        "stage":  "gameplay_verified",
+                        "search_requests":  1,
+                        "connected":  true,
+                        "active_battle":  false,
+                        "virtue_spent":  0,
+                        "platinum_spent":  0
+                    },
+                    {
+                        "stage":  "passed"
+                    }
+                ]
+}

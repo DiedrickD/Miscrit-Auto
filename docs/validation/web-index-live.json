@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-19",
+  "records": [
+    {
+      "stage": "index_verified",
+      "indexed_families": 16,
+      "completed_families": 1,
+      "owned_copies": 21,
+      "owned_level30plus": 1,
+      "read_only": true
+    }
+  ]
+}

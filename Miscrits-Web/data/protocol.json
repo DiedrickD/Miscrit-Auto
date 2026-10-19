@@ -1,0 +1,308 @@
+{
+	"campaign_last": 400,
+	"campaigns": {
+		"forest": {
+			"map": "forest",
+			"min_level": 0,
+			"name": "CCAMPAIGN_NAME_1",
+			"points": [
+				{
+					"background": "forest1",
+					"name": "CCAMPAIGN_1POINT1",
+					"sound": "forest"
+				},
+				{
+					"background": "forest1",
+					"name": "CCAMPAIGN_1POINT2",
+					"sound": "forest"
+				},
+				{
+					"background": "forest2",
+					"name": "CCAMPAIGN_1POINT3",
+					"sound": "forest"
+				},
+				{
+					"background": "forest2",
+					"name": "CCAMPAIGN_1POINT4",
+					"sound": "forest"
+				},
+				{
+					"background": "forest2",
+					"name": "CCAMPAIGN_1POINT5",
+					"sound": "forest"
+				},
+				{
+					"background": "forest3",
+					"name": "CCAMPAIGN_1POINT6",
+					"sound": "forest"
+				},
+				{
+					"background": "forest3",
+					"name": "CCAMPAIGN_1POINT7",
+					"sound": "forest_magicite"
+				},
+				{
+					"background": "forest3",
+					"name": "CCAMPAIGN_1POINT8",
+					"sound": "forest_magicite"
+				},
+				{
+					"background": "forest4",
+					"name": "CCAMPAIGN_1POINT9",
+					"sound": "forest_magicite"
+				},
+				{
+					"background": "forest4",
+					"name": "CCAMPAIGN_1POINT10",
+					"sound": "forest_elementum"
+				}
+			]
+		},
+		"miscrian_jungle": {
+			"map": "miscrian_jungle",
+			"min_level": 450,
+			"name": "CCAMPAIGN_NAME_4",
+			"points": [
+				{
+					"background": "miscrian_jungle1",
+					"name": "CCAMPAIGN_4POINT1",
+					"sound": "miscrian_jungle"
+				},
+				{
+					"background": "miscrian_jungle1",
+					"name": "CCAMPAIGN_4POINT2",
+					"sound": "miscrian_jungle"
+				},
+				{
+					"background": "miscrian_jungle1",
+					"name": "CCAMPAIGN_4POINT3",
+					"sound": "miscrian_jungle"
+				},
+				{
+					"background": "miscrian_jungle2",
+					"name": "CCAMPAIGN_4POINT4",
+					"sound": "miscrian_jungle"
+				},
+				{
+					"background": "miscrian_jungle2",
+					"name": "CCAMPAIGN_4POINT5",
+					"sound": "miscrian_jungle"
+				},
+				{
+					"background": "miscrian_jungle2",
+					"name": "CCAMPAIGN_4POINT6",
+					"sound": "miscrian_jungle"
+				},
+				{
+					"background": "miscrian_jungle3",
+					"name": "CCAMPAIGN_4POINT7",
+					"sound": "miscrian_jungle_magicite"
+				},
+				{
+					"background": "miscrian_jungle3",
+					"name": "CCAMPAIGN_4POINT8",
+					"sound": "miscrian_jungle_magicite"
+				},
+				{
+					"background": "miscrian_jungle4",
+					"name": "CCAMPAIGN_4POINT9",
+					"sound": "miscrian_jungle_magicite"
+				},
+				{
+					"background": "miscrian_jungle4",
+					"name": "CCAMPAIGN_4POINT10",
+					"sound": "miscrian_jungle_elementum"
+				}
+			]
+		},
+		"mount_gemma": {
+			"map": "mount_gemma",
+			"min_level": 150,
+			"name": "CCAMPAIGN_NAME_2",
+			"points": [
+				{
+					"background": "mountain6",
+					"name": "CCAMPAIGN_2POINT1",
+					"sound": "mount_gemma"
+				},
+				{
+					"background": "mountain1",
+					"name": "CCAMPAIGN_2POINT2",
+					"sound": "mount_gemma"
+				},
+				{
+					"background": "mountain1",
+					"name": "CCAMPAIGN_2POINT3",
+					"sound": "mount_gemma"
+				},
+				{
+					"background": "mountain1",
+					"name": "CCAMPAIGN_2POINT4",
+					"sound": "mount_gemma"
+				},
+				{
+					"background": "mountain3",
+					"name": "CCAMPAIGN_2POINT5",
+					"sound": "mount_gemma"
+				},
+				{
+					"background": "mountain7",
+					"name": "CCAMPAIGN_2POINT6",
+					"sound": "mount_gemma"
+				},
+				{
+					"background": "mountain7",
+					"name": "CCAMPAIGN_2POINT7",
+					"sound": "mount_gemma_magicite"
+				},
+				{
+					"background": "mountain3",
+					"name": "CCAMPAIGN_2POINT8",
+					"sound": "mount_gemma_magicite"
+				},
+				{
+					"background": "mountain3",
+					"name": "CCAMPAIGN_2POINT9",
+					"sound": "mount_gemma_magicite"
+				},
+				{
+					"background": "mountain4",
+					"name": "CCAMPAIGN_2POINT10",
+					"sound": "mount_gemma_elementum"
+				}
+			]
+		},
+		"sunfall_shores": {
+			"map": "sunfall_shores",
+			"min_level": 300,
+			"name": "CCAMPAIGN_NAME_3",
+			"points": [
+				{
+					"background": "sunfall_shores1",
+					"name": "CCAMPAIGN_3POINT1",
+					"sound": "sunfall_shores"
+				},
+				{
+					"background": "sunfall_shores1",
+					"name": "CCAMPAIGN_3POINT2",
+					"sound": "sunfall_shores"
+				},
+				{
+					"background": "sunfall_shores1",
+					"name": "CCAMPAIGN_3POINT3",
+					"sound": "sunfall_shores"
+				},
+				{
+					"background": "sunfall_shores2",
+					"name": "CCAMPAIGN_3POINT4",
+					"sound": "sunfall_shores"
+				},
+				{
+					"background": "sunfall_shores2",
+					"name": "CCAMPAIGN_3POINT5",
+					"sound": "sunfall_shores"
+				},
+				{
+					"background": "sunfall_shores3",
+					"name": "CCAMPAIGN_3POINT6",
+					"sound": "sunfall_shores"
+				},
+				{
+					"background": "sunfall_shores3",
+					"name": "CCAMPAIGN_3POINT7",
+					"sound": "sunfall_shores_magicite"
+				},
+				{
+					"background": "sunfall_shores3",
+					"name": "CCAMPAIGN_3POINT8",
+					"sound": "sunfall_shores_magicite"
+				},
+				{
+					"background": "sunfall_shores4",
+					"name": "CCAMPAIGN_3POINT9",
+					"sound": "sunfall_shores_magicite"
+				},
+				{
+					"background": "sunfall_shores4",
+					"name": "CCAMPAIGN_3POINT10",
+					"sound": "sunfall_shores_elementum"
+				}
+			]
+		}
+	},
+	"element_weakness": {
+		"Earth": "Wind",
+		"Fire": "Water",
+		"Lightning": "Earth",
+		"Nature": "Fire",
+		"Physical": "",
+		"Water": "Nature",
+		"Wind": "Lightning"
+	},
+	"level_keys": [
+		0,
+		1,
+		4,
+		7,
+		10,
+		13,
+		16,
+		19,
+		22,
+		25,
+		28,
+		30
+	],
+	"locations": {
+		"cave": 6,
+		"emerald_isle": 12,
+		"forest": 2,
+		"hidden_forest": 7,
+		"mansion": 3,
+		"miscrian_jungle": 11,
+		"monks_mountain": 14,
+		"moon": 8,
+		"mount_gemma": 5,
+		"shack": 9,
+		"sunfall_shores": 4,
+		"temple": 13,
+		"vi_town": 10,
+		"village": 1
+	},
+	"training_xp": {
+		"1": 10,
+		"10": 115,
+		"11": 135,
+		"12": 157,
+		"13": 180,
+		"14": 205,
+		"15": 231,
+		"16": 258,
+		"17": 287,
+		"18": 317,
+		"19": 349,
+		"2": 14,
+		"20": 382,
+		"21": 416,
+		"22": 451,
+		"23": 488,
+		"24": 527,
+		"25": 566,
+		"26": 607,
+		"27": 649,
+		"28": 692,
+		"29": 737,
+		"3": 20,
+		"30": 783,
+		"31": 830,
+		"32": 878,
+		"33": 928,
+		"34": 979,
+		"4": 29,
+		"5": 39,
+		"6": 51,
+		"7": 64,
+		"8": 80,
+		"9": 97
+	}
+}

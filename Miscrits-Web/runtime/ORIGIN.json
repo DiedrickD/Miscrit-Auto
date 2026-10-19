@@ -1,0 +1,9 @@
+{
+  "name": "Node.js",
+  "version": "22.23.3",
+  "binary_url": "https://nodejs.org/dist/v22.23.3/win-x64/node.exe",
+  "sha256": "9c9245166b4a8e182e0b797da9c20136117ff24368eaff1fec8343a123c8db0e",
+  "checksum_source": "https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt",
+  "license_source": "https://raw.githubusercontent.com/nodejs/node/v22.23.3/LICENSE",
+  "verified_on": "2026-10-19"
+}

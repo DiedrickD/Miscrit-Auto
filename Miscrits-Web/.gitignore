@@ -1,0 +1,6 @@
+/data/settings.json
+/data/history.json
+/data/profiles.json
+/data/*.tmp
+/runtime/node.exe
+*.log

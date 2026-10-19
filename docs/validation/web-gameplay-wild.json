@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-19",
+  "records": [
+    {
+      "stage": "battle_frame",
+      "opcode": 0,
+      "keys": [
+        "type",
+        "pvp",
+        "player1",
+        "player2",
+        "capture_chance",
+        "next_turn"
+      ],
+      "type": "Wild"
+    },
+    {
+      "stage": "preflight",
+      "connected": true,
+      "active_battle": true,
+      "owned_count": 9,
+      "team_levels": [
+        30,
+        1
+      ],
+      "fainted": 0,
+      "can_virtue_heal": true,
+      "location": "Forest",
+      "area": 1,
+      "search_stops": 3,
+      "campaign_stage": 0,
+      "campaign_attempts": 0
+    },
+    {
+      "stage": "restoring_previous_test_battle",
+      "type": "Wild"
+    },
+    {
+      "stage": "action",
+      "kind": "capture",
+      "automatic": true
+    },
+    {
+      "stage": "encounter",
+      "type": "Wild",
+      "foe": "Flue",
+      "chance": 36
+    },
+    {
+      "stage": "battle_frame",
+      "opcode": 10,
+      "keys": [
+        "captured",
+        "stars",
+        "user_id",
+        "actions",
+        "turns",
+        "capture_chance",
+        "next_turn"
+      ]
+    },
+    {
+      "stage": "battle_frame",
+      "opcode": 2,
+      "keys": [
+        "id",
+        "actions",
+        "user_id",
+        "turns",
+        "capture_chance",
+        "next_turn"
+      ]
+    },
+    {
+      "stage": "action",
+      "kind": "flee",
+      "automatic": true
+    },
+    {
+      "stage": "battle_frame",
+      "opcode": 4,
+      "keys": [
+        "success",
+        "user_id",
+        "next_turn"
+      ]
+    },
+    {
+      "stage": "battle_completed",
+      "activity": "wild",
+      "outcome": "fled",
+      "wins": 0,
+      "records": [
+        {
+          "kind": "battle",
+          "message": "Wild: fled"
+        }
+      ]
+    },
+    {
+      "stage": "gameplay_verified",
+      "search_requests": 0,
+      "connected": true,
+      "active_battle": false,
+      "virtue_spent": 0,
+      "platinum_spent": 0
+    },
+    {
+      "stage": "passed"
+    }
+  ]
+}

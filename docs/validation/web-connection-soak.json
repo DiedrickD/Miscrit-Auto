@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-19",
+  "account": "User-authorized dummy account; credentials omitted",
+  "baseline": {
+    "json_heartbeat": true,
+    "authenticated": true,
+    "server_closed_connection": true,
+    "close_code": 1000,
+    "connected_at_20_seconds": false
+  },
+  "native_idle_comparison": {
+    "json_heartbeat": false,
+    "connected_at_seconds": [20, 40, 60],
+    "unexpected_closes": 0
+  },
+  "updated_transport": {
+    "heartbeat": "WebSocket protocol control frames",
+    "connected_at_seconds": [20, 40, 60],
+    "unexpected_closes": 0,
+    "refresh_token_request_succeeded": true,
+    "deliberate_close_code": 4000,
+    "reconnected_to_same_account": true
+  },
+  "app_recovery_report": "docs/validation/web-connection-live.json",
+  "game_mutations_sent": false
+}

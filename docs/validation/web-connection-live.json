@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-19",
+  "mode": "app recovery",
+  "records": [
+    {
+      "stage": "frame",
+      "elapsed_ms": 30731,
+      "keys": [
+        "status_presence_event"
+      ]
+    },
+    {
+      "stage": "frame",
+      "elapsed_ms": 30919,
+      "keys": [
+        "cid",
+        "rpc"
+      ],
+      "cid": "1"
+    },
+    {
+      "stage": "authenticated",
+      "elapsed_ms": 30920,
+      "connected": true,
+      "tutorial": false,
+      "active_battle": false
+    },
+    {
+      "stage": "socket_close",
+      "elapsed_ms": 31133,
+      "code": 4001,
+      "clean": true
+    },
+    {
+      "stage": "frame",
+      "elapsed_ms": 31898,
+      "keys": [
+        "status_presence_event"
+      ]
+    },
+    {
+      "stage": "frame",
+      "elapsed_ms": 32092,
+      "keys": [
+        "cid",
+        "rpc"
+      ],
+      "cid": "2"
+    },
+    {
+      "stage": "app_recovery",
+      "elapsed_ms": 32093,
+      "connected": true,
+      "same_account": true,
+      "automation_paused": true,
+      "lastCloseCode": 4001,
+      "heartbeatsSent": 2,
+      "heartbeatsAcknowledged": 2
+    },
+    {
+      "stage": "passed",
+      "elapsed_ms": 32093
+    }
+  ]
+}
