@@ -1,0 +1,30 @@
+﻿{
+    "date":  "2026-10-21",
+    "desktop_offline_checks":  4024,
+    "failures":  0,
+    "embedded_resources_verified":  [
+                                        "Server.gd",
+                                        "capture_catalog.json",
+                                        "capture_catalog.gd",
+                                        "mama_hunt_test.gd",
+                                        "mama_hunter.gd",
+                                        "capture_panel.gd",
+                                        "capture_panel_base.gd",
+                                        "campaign_runner.gd",
+                                        "team_rotation.gd",
+                                        "capture_diagnostics.gd"
+                                    ],
+    "zip_bytes":  384523243,
+    "zip_sha256":  "714baa7030cbec8b741a0d9e9955744605d1f3538fb56b3e812d1706848e29a1",
+    "zip_entries":  [
+                        "Miscrits-Desktop/BACA-DULU.txt",
+                        "Miscrits-Desktop/Launch Auto Capture.cmd",
+                        "Miscrits-Desktop/Launch.ps1",
+                        "Miscrits-Desktop/Launch.vbs",
+                        "Miscrits-Desktop/Auto Capture Support/capture-run/libgodotsteam.windows.template_release.x86_64.dll",
+                        "Miscrits-Desktop/Auto Capture Support/capture-run/Miscrits-Capture.exe",
+                        "Miscrits-Desktop/Auto Capture Support/capture-run/steam_api64.dll"
+                    ],
+    "credentials_and_personal_settings_included":  false,
+    "live_friend_login_verified":  false
+}
