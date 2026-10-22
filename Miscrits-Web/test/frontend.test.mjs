@@ -1,20 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import vm from 'node:vm';
 test('frontend controls reference existing, unique elements and all navigation panels exist',()=>{
-  const html=readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
-  const js=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8');
+  const html=['App.jsx','Workspace.jsx',...readdirSync(new URL('../src/panels/',import.meta.url)).map(n=>'panels/'+n)].map(n=>readFileSync(new URL('../src/'+n,import.meta.url),'utf8')).join('\n');
+  const js=readFileSync(new URL('../src/controller.js',import.meta.url),'utf8');
   const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
   assert.equal(new Set(ids).size,ids.length);
   for(const [,id] of js.matchAll(/\$\('([^']+)'\)/g)) assert.ok(ids.includes(id),'Missing DOM element '+id);
   for(const [,tab] of html.matchAll(/data-tab="([^"]+)"/g)) assert.ok(ids.includes('tab-'+tab));
-  assert.match(html,/autocomplete="current-password"/);
+  assert.match(html,/autoComplete="current-password"/);
   assert.doesNotMatch(js,/localStorage|sessionStorage|innerHTML/);
 });
 
 test('tier prerequisites distinguish signed-out, reconnecting, unloaded index and valid empty index',()=>{
-  const js=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8');
+  const js=readFileSync(new URL('../src/controller.js',import.meta.url),'utf8');
   const helper=js.slice(js.indexOf('function tierAccess('),js.indexOf('function addTier('));
   const context=vm.createContext({state:null});vm.runInContext(helper,context);
   assert.equal(vm.runInContext('tierAccess().action',context),'Sign in');
@@ -27,7 +27,7 @@ test('tier prerequisites distinguish signed-out, reconnecting, unloaded index an
 });
 
 test('account polling refreshes tier buttons while preserving unsaved settings',()=>{
-  const js=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8');
+  const js=readFileSync(new URL('../src/controller.js',import.meta.url),'utf8');
   const render=js.slice(js.indexOf('function render(){'),js.indexOf('async function poll(){'));
   const elements=new Map();let tiers=0,loads=0;
   const draft={replacementNames:['My unsaved selection']};
