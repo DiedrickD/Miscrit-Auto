@@ -1,7 +1,12 @@
+// Native Constants.ratings[18 - PlayerMiscrit.get_rating_sum()].
+const RATING_GRADES=['F-','F','F+','D','D+','C','C+','B','B+','A','A+','S','S+'].map((grade,index)=>({grade,value:index+6}));
+function ratingLabel(value){return value===0?'Any grade':RATING_GRADES.find(item=>item.value===Number(value))?.grade||String(value)+'/18';}
+
 const $=id=>document.getElementById(id);
 let csrf='',catalog=[],state=null,tab='hunt',draft=null,dirty=false,posting=false,polling=false,lastBattleId='',toastTimer;
 const copy=value=>structuredClone(value);
 let collectionPage=1,collectionRenderKey='';
+let huntPage=1,huntRarity='all',huntBrowserKey='',huntTargetsKey='';
 let browserAlertsEnabled=false;
 const titles={arena:['Arena','Ready for the next challenger.','Choose Battle, Platinum or Random Arena. Follow the queue, draft and live battle.'],hunt:['Hunt & capture','Make every search count.','Choose your Miscrits. Set the rules. Let the hunt come to you.'],campaign:['Campaign','Find your way forward.','One team. One stage at a time. Every confirmed victory counts.'],team:['Your team','A little stronger, together.','Keep your strongest lead. Give your next great Miscrits room to grow.'],battle:['Live battle','Your move, trainer.','A clear view of the battle, with manual controls when you need them.'],workflow:['Workflow','See what happens next.','Follow the queue, manage healing, save profiles and check this session.'],collection:['Collection','Know every Miscrit you own.','Track missing families, your best copies, and level-30 completion by tier.'],history:['Activity log','Every encounter, recorded.','Your captures, victories, and recent activity in one place.']};
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,6000);}
@@ -41,7 +46,12 @@ function image(name,className='avatar'){
 function setTab(next){tab=next;document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-panel').forEach(p=>p.hidden=p.id!=='tab-'+tab);const [label,title,description]=titles[tab];$('page-label').textContent=label;$('page-title').textContent=title;$('page-description').textContent=description;if(next==='arena')renderArena();if(next==='collection')renderCollection();if(next==='workflow')renderWorkflow();}
 document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener('click',()=>setTab(button.dataset.tab)));
 function canonical(value){return catalog.find(s=>s.name.toLowerCase()===value.trim().toLowerCase());}
-function addName(input,key){if(!draft)return;const entry=canonical(input.value);if(!entry){toast('Choose a Miscrit family from the list.');return;}if(!draft[key].includes(entry.name))draft[key].push(entry.name);dirty=true;input.value='';renderLists();}
+function addName(input,key){if(!draft)return;const entry=canonical(input.value);if(!entry){toast('Choose a Miscrit family from the list.');return;}if(key==='names'){const access=huntAccess(entry);if(!access.available){toast(access.reason);return;}if(!draft.names.includes(entry.name)&&draft.names.length>=100){toast('The hunt list supports 100 targets.');return;}}if(!draft[key].includes(entry.name))draft[key].push(entry.name);dirty=true;input.value='';renderLists();}
+$('target-input').addEventListener('input',()=>{huntPage=1;renderHuntBrowser();});
+$('hunt-available').addEventListener('change',()=>{huntPage=1;renderHuntBrowser();});
+$('hunt-prev').addEventListener('click',()=>{huntPage--;renderHuntBrowser();});
+$('hunt-next').addEventListener('click',()=>{huntPage++;renderHuntBrowser();});
+$('hunt-add-visible').addEventListener('click',()=>{if(!draft)return;const entries=filteredHuntEntries().filter(entry=>huntAccess(entry).available&&!draft.names.includes(entry.name));if(!addMappedHuntNames(entries))return;dirty=true;renderLists();toast(entries.length+' targets added. Save hunt settings to apply.');});
 $('target-form').addEventListener('submit',event=>{event.preventDefault();addName($('target-input'),'names');});
 $('import-tier-targets').addEventListener('click',importTierTargets);
 $('clear-all-targets').addEventListener('click',()=>{
@@ -57,25 +67,78 @@ function moveTarget(name,delta){
   document.querySelector('[data-target-order="'+to+'"] button:not(:disabled)')?.focus();
 }
 function togglePrimary(name){draft.primaryTarget=draft.primaryTarget===name?'':name;dirty=true;renderLists();}
+function filteredHuntEntries(){
+  const query=$('target-input').value.trim().toLowerCase();
+  return catalog.filter(entry=>(huntRarity==='all'||entry.rarity===huntRarity)&&
+    (!query||[entry.name,...(entry.names||[])].some(name=>name.toLowerCase().includes(query)))&&
+    (!$('hunt-available').checked||huntAccess(entry).available));
+}
+function renderHuntBrowser(){
+  const filtered=filteredHuntEntries(),pages=Math.max(1,Math.ceil(filtered.length/24));huntPage=Math.max(1,Math.min(huntPage,pages));
+  const key=JSON.stringify([huntPage,huntRarity,$('target-input').value,$('hunt-available').checked,draft?.names,state?.connected,state?.reconnecting,state?.requiresLogin,state?.huntAccessVersion,state?.huntAvailability]);
+  if(key===huntBrowserKey)return;huntBrowserKey=key;
+  const focusedRarity=document.activeElement?.closest('#hunt-rarities')?document.activeElement.textContent:null;
+  const rarities=$('hunt-rarities');rarities.replaceChildren();
+  for(const rarity of ['all','Common','Rare','Epic','Exotic','Legendary']){
+    const button=element('button','hunt-rarity'+(huntRarity===rarity?' is-active':''),rarity==='all'?'All':rarity);button.type='button';button.setAttribute('aria-pressed',String(huntRarity===rarity));
+    button.addEventListener('click',()=>{huntRarity=rarity;huntPage=1;renderHuntBrowser();});rarities.append(button);if(focusedRarity===button.textContent)button.focus();
+  }
+  const ready=Boolean(state?.connected&&!state.reconnecting&&!state.requiresLogin);
+  $('hunt-access').textContent=ready?(state.huntAccessVersion===2&&state.huntAvailability?'Map and area boss gates checked for your account · locked portraits cannot be added.':'The website backend needs an update restart. Finish any battle, run Stop Miscrits Website.cmd, then Launch Miscrits Website.cmd and sign in again.'):state?.reconnecting?'Reconnecting... waiting to check your maps.':'Sign in to check your maps and add targets.';
+  const grid=$('hunt-grid');grid.replaceChildren();
+  for(const entry of filtered.slice((huntPage-1)*24,huntPage*24)){
+    const access=huntAccess(entry),selected=draft?.names.includes(entry.name);
+    const button=element('button','hunt-tile'+(selected?' is-selected':'')+(!access.available?' is-locked':''));button.type='button';button.disabled=!access.available||selected||!draft;button.title=entry.name+' · '+entry.rarity+' · '+access.reason+' · '+[...new Set(entry.stops.map(s=>s.location.replaceAll('_',' ')))].join(', ');
+    button.title+=' '+(access.detail||'');
+    button.setAttribute('aria-label',entry.name+' · '+entry.rarity+' · '+(selected?'Selected · ':'')+(access.detail||access.reason));
+    button.append(image(entry.name),element('strong','',entry.name),element('small',access.available?'':'hunt-locked-label',!access.available?access.reason:selected?'✓ Added':'+ Add'));
+    button.addEventListener('click',()=>{if(!huntAccess(entry).available)return;if(!addMappedHuntNames([entry]))return;dirty=true;renderLists();});grid.append(button);
+  }
+  if(!filtered.length)grid.append(element('p','hint','No Miscrits match these filters. Try another rarity or search.'));
+  $('hunt-page').textContent=filtered.length+' Miscrits · '+huntPage+' / '+pages;
+  $('hunt-prev').disabled=huntPage<=1;$('hunt-next').disabled=huntPage>=pages;
+  const count=filtered.filter(entry=>huntAccess(entry).available&&!draft?.names.includes(entry.name)).length;
+  $('hunt-add-visible').disabled=!draft||!count;$('hunt-add-visible').textContent='Add available ('+count+')';
+}
 function renderLists(){
-  const names=draft.names;$('target-count').textContent=names.length+' target'+(names.length===1?'':'s');$('clear-all-targets').disabled=names.length===0;$('target-empty').hidden=names.length>0;$('target-list').replaceChildren();
+  const names=draft.names;const targetsKey=JSON.stringify([names,draft.primaryTarget,names.map(name=>huntAccess(canonical(name)))]);if(targetsKey!==huntTargetsKey){huntTargetsKey=targetsKey;$('target-count').textContent=names.length+' target'+(names.length===1?'':'s');$('clear-all-targets').disabled=names.length===0;$('target-empty').hidden=names.length>0;$('target-list').replaceChildren();$('hunt-route-list').replaceChildren();
   for(const [index,name]of names.entries()){
-    const entry=canonical(name),primary=draft.primaryTarget===name;
-    const row=element('div','target-item'+(primary?' is-primary':''));row.dataset.targetOrder=String(index);row.append(image(name));
-    const text=element('div','target-info');text.append(element('strong','',(index+1)+'. '+name));
-    const areas=[...new Set(entry.stops.map(s=>s.location.replaceAll('_',' ')))];text.append(element('small','',entry.rarity+' · '+(areas.join(', ')||'No official wild location')));row.append(text);
+    const entry=canonical(name),primary=draft.primaryTarget===name,access=huntAccess(entry);
+    const row=element('div','target-item'+(primary?' is-primary':''));row.title=access.detail||access.reason;row.append(image(name));
+    const text=element('div','target-info');text.append(element('strong','',name),element('small',access.available?'':'hunt-locked-label',access.available?(primary?'★ Main':entry?.rarity||'Target'):access.reason));row.append(text);
     const controls=element('div','target-controls');
     for(const [label,delta]of [['↑',-1],['↓',1]]){const button=element('button','button small subtle',label);button.type='button';button.disabled=index+delta<0||index+delta>=names.length;button.setAttribute('aria-label','Move '+name+(delta<0?' up':' down'));button.addEventListener('click',()=>moveTarget(name,delta));controls.append(button);}
-    const main=element('button','button small'+(primary?'':' subtle'),primary?'★ Main':'☆ Main');main.type='button';main.setAttribute('aria-label','Prioritize '+name);main.setAttribute('aria-pressed',String(primary));main.addEventListener('click',()=>togglePrimary(name));controls.append(main);
-    const remove=element('button','remove','×');remove.type='button';remove.setAttribute('aria-label','Remove '+name);remove.addEventListener('click',()=>removeName('names',name));controls.append(remove);row.append(controls);$('target-list').append(row);
+    const main=element('button','button small subtle',primary?'★':'☆');main.type='button';main.title='Search '+name+' first';main.setAttribute('aria-label','Prioritize '+name);main.setAttribute('aria-pressed',String(primary));main.disabled=!access.available;main.addEventListener('click',()=>togglePrimary(name));controls.append(main);
+    const remove=element('button','remove','×');remove.type='button';remove.setAttribute('aria-label','Remove '+name);remove.addEventListener('click',()=>removeName('names',name));row.append(remove);$('target-list').append(row);
+    const route=element('div','hunt-route-row');route.dataset.targetOrder=String(index);route.append(element('span','',(index+1)+'. '+name),controls);$('hunt-route-list').append(route);
   }
-  renderTierLists();
-  renderRoster();
+  }
+  renderHuntBrowser();renderTierLists();renderRoster();
 }
-function loadDraft(config){draft=copy(config);loadArenaDraft();$('mode').value=draft.mode;$('rating').value=draft.minRating;$('threshold').value=draft.captureThreshold;$('capture-low-rating').checked=draft.captureLowRatedTargets;$('remove-captured-targets').checked=draft.autoRemoveCapturedTargets;$('max-attacks').value=draft.maxAttacks;$('flee').checked=draft.fleeUnwanted;$('campaign-limit').value=draft.campaignLimit;$('replace').checked=draft.autoReplace;$('auto-level').checked=draft.autoLevel;$('train-selected').checked=draft.trainSelected;$('replace').disabled=draft.trainSelected;$('wild-heal').checked=draft.wildAutoHeal;$('wild-heal-budget').value=draft.wildHealBudget;$('notify-events').checked=draft.notifyEvents;renderLists();modeHelp();}
-function modeHelp(){const help={manual_target:'Automation pauses when your selected target appears. Continue in Live battle.',capture_targeted:'Weaken selected targets, then attempt a free capture at your threshold.',capture_any:'Use the capture rules for every wild species encountered.',capture_missing:'Capture any encountered species absent from your current collection, treating evolved copies as the same family. Your hunt list sets the search route. Listed species without a rating-17+ copy are also captured when a qualifying copy appears. Owned encounters provide XP while selected copies are training; otherwise the run/fight setting applies.',capture_rated:'Use the capture rules when the server rating meets your minimum.',fight:'Fight wild encounters using an available attack. No captures.'};$('mode-help').textContent=help[$('mode').value];}
-['mode','rating','threshold','max-attacks','flee','campaign-limit','replace','auto-level','train-selected','capture-low-rating','remove-captured-targets','wild-heal','wild-heal-budget','notify-events'].forEach(id=>$(id).addEventListener('input',()=>{if(!draft)return;dirty=true;draft.trainSelected=$('train-selected').checked;$('replace').disabled=draft.trainSelected;renderRoster();modeHelp();}));
-function formConfig(){return {...draft,activity:selectedActivity(),arenaType:$('arena-type').value,arenaStrategy:$('arena-strategy').value,arenaBattleLimit:Number($('arena-limit').value),arenaStopOnLoss:$('arena-stop-loss').checked,arenaAllowInjured:$('arena-injured').checked,mode:$('mode').value,minRating:Number($('rating').value),captureThreshold:Number($('threshold').value),captureLowRatedTargets:$('capture-low-rating').checked,autoRemoveCapturedTargets:$('remove-captured-targets').checked,maxAttacks:Number($('max-attacks').value),fleeUnwanted:$('flee').checked,campaignLimit:Number($('campaign-limit').value),autoLevel:$('auto-level').checked,trainSelected:$('train-selected').checked,autoReplace:$('replace').checked,wildAutoHeal:$('wild-heal').checked,wildHealBudget:Number($('wild-heal-budget').value),notifyEvents:$('notify-events').checked};}
+function loadDraft(config){draft=copy(config);loadArenaDraft();$('mode').value=draft.mode;$('rating').value=draft.minRating;$('search-interval').value=draft.searchIntervalSeconds??8;$('threshold').value=draft.captureThreshold;$('capture-low-rating').checked=draft.captureLowRatedTargets;$('remove-captured-targets').checked=draft.autoRemoveCapturedTargets;$('max-attacks').value=draft.maxAttacks;$('flee').checked=draft.fleeUnwanted;$('campaign-limit').value=draft.campaignLimit;$('replace').checked=draft.autoReplace;$('auto-level').checked=draft.autoLevel;$('train-selected').checked=draft.trainSelected;$('replace').disabled=draft.trainSelected;$('wild-heal').checked=draft.wildAutoHeal;$('wild-heal-budget').value=draft.wildHealBudget;$('notify-events').checked=draft.notifyEvents;renderLists();modeHelp();}
+let ratingRenderKey='';
+function renderRatingGrades(disabled){
+  const value=Number($('rating').value),key=value+':'+disabled;if(key===ratingRenderKey)return;ratingRenderKey=key;
+  const focused=document.activeElement?.closest('#rating-grades')?document.activeElement?.dataset.value:null;
+  const group=$('rating-grades');group.replaceChildren();
+  for(const item of [{grade:'Any',value:0},...RATING_GRADES]){
+    const button=element('button','grade-badge'+(value===item.value?' is-active':''),item.grade);button.type='button';button.dataset.value=String(item.value);button.dataset.grade=item.value===0?'':item.grade[0];button.disabled=disabled;
+    button.setAttribute('aria-pressed',String(value===item.value));button.setAttribute('aria-label',item.value===0?'Any grade':item.grade+' or higher, '+item.value+' out of 18');button.title=item.value===0?'No minimum grade':item.grade+' = '+item.value+'/18';
+    button.addEventListener('click',()=>{$('rating').value=item.value;$('rating').dispatchEvent(new Event('input',{bubbles:true}));});group.append(button);if(focused===button.dataset.value)button.focus();
+  }
+}
+function modeHelp(){
+  const mode=$('mode').value,automatic=mode.startsWith('capture_'),override=$('capture-low-rating').checked;
+  const ignored=['fight','capture_any','capture_missing'].includes(mode)||(mode==='capture_targeted'&&override);
+  const help={manual_target:'Pause on a matching target so you can battle manually.',capture_targeted:'Search your selected targets and catch matching encounters.',capture_any:'Catch every wild family, regardless of grade.',capture_missing:'Catch families missing from your collection. Evolved copies count as the same family.',capture_rated:'Catch any encountered family that meets your minimum grade.',fight:'Fight encounters for XP without capturing.'};
+  $('mode-help').textContent=help[mode];renderRatingGrades(ignored);
+  $('rating-help').textContent=ignored?(override&&mode==='capture_targeted'?'Any grade is allowed because the advanced minimum-grade override is on.':'This mode does not use a minimum grade.'):'Choose the lowest grade to accept. '+ratingLabel(Number($('rating').value))+' ('+$('rating').value+'/18) is selected.';
+  $('threshold').disabled=!automatic;
+  const grade=ratingLabel(Number($('rating').value));
+  $('capture-plan').textContent=!automatic?(mode==='fight'?'Fight only. No capture attempts.':'Pause on matching targets. You control the battle and capture.'):'Free capture at '+$('threshold').value+'% or higher. '+(ignored?'No minimum grade for this mode.':grade==='Any grade'?'Any grade accepted.':'Accept '+grade+' or higher.')+(override&&['capture_rated','capture_missing'].includes(mode)?' Selected targets may bypass this minimum.':'')+($('train-selected').checked?' Training upgrades still seek S or S+ unless the override is on.':'');
+}
+['mode','rating','search-interval','threshold','max-attacks','flee','campaign-limit','replace','auto-level','train-selected','capture-low-rating','remove-captured-targets','wild-heal','wild-heal-budget','notify-events'].forEach(id=>$(id).addEventListener('input',()=>{if(!draft)return;dirty=true;draft.trainSelected=$('train-selected').checked;$('replace').disabled=draft.trainSelected;renderRoster();modeHelp();}));
+function formConfig(){return {...draft,activity:selectedActivity(),arenaType:$('arena-type').value,arenaStrategy:$('arena-strategy').value,arenaBattleLimit:Number($('arena-limit').value),arenaStopOnLoss:$('arena-stop-loss').checked,arenaAllowInjured:$('arena-injured').checked,mode:$('mode').value,minRating:Number($('rating').value),searchIntervalSeconds:Number($('search-interval').value),captureThreshold:Number($('threshold').value),captureLowRatedTargets:$('capture-low-rating').checked,autoRemoveCapturedTargets:$('remove-captured-targets').checked,maxAttacks:Number($('max-attacks').value),fleeUnwanted:$('flee').checked,campaignLimit:Number($('campaign-limit').value),autoLevel:$('auto-level').checked,trainSelected:$('train-selected').checked,autoReplace:$('replace').checked,wildAutoHeal:$('wild-heal').checked,wildHealBudget:Number($('wild-heal-budget').value),notifyEvents:$('notify-events').checked};}
 function selectedActivity(){return tab==='arena'?'arena':tab==='campaign'?'campaign':tab==='hunt'?'wild':draft.activity;}
 function loadArenaDraft(){
   $('arena-type').value=draft.arenaType||'Default';$('arena-strategy').value=draft.arenaStrategy||'smart';$('arena-limit').value=draft.arenaBattleLimit??10;$('arena-stop-loss').checked=draft.arenaStopOnLoss??true;$('arena-injured').checked=draft.arenaAllowInjured??false;arenaRules();
@@ -233,6 +296,11 @@ function familyStatus(entry){
   const complete=Boolean(state?.collectionIndex?.[entry.id]?.complete||copies.some(m=>m.level>=30));
   return {best:copies[0],complete,indexChecked:state?.collectionIndex!==null&&state?.collectionIndex!==undefined};
 }
+function huntAccess(entry){
+  if(!state?.connected||state.reconnecting||state.requiresLogin)return {available:false,reason:'Sign in to check maps'};
+  if(state.huntAccessVersion!==2||!state.huntAvailability)return {available:false,reason:'Restart website backend'};
+  return state.huntAvailability[entry?.name]||{available:false,reason:'Map data unavailable'};
+}
 function tierAccess(){
   if(!state?.player)return {ready:false,reason:'Sign in to load your collection and unlock tier buttons.',action:'Sign in'};
   if(state.requiresLogin)return {ready:false,reason:'Your session expired. Sign in again to unlock tier buttons.',action:'Sign in'};
@@ -242,18 +310,18 @@ function tierAccess(){
   return {ready:true,reason:'Collection and Miscrits index loaded. Add owned 17+ copies or mapped capture targets by tier.',action:''};
 }
 function addMappedHuntNames(entries){
-  const names=[...new Set([...(draft.names||[]),...entries.map(entry=>entry.name)])];
+  const names=[...new Set([...(draft.names||[]),...entries.filter(entry=>huntAccess(entry).available).map(entry=>entry.name)])];
   if(names.length>100){toast('The hunt list supports 100 targets. Remove some hunt targets before adding this tier.');return false;}
   draft.names=names;return true;
 }
 function importTierTargets(){
   if(!draft)return;const access=tierAccess();if(!access.ready){toast(access.reason);return;}
-  const entries=catalog.filter(entry=>draft.replacementNames.includes(entry.name)&&entry.stops.length>0).filter(entry=>{const status=familyStatus(entry);return !status.complete&&(!status.best||status.best.rating<17);});
+  const entries=catalog.filter(entry=>draft.replacementNames.includes(entry.name)&&entry.stops.length>0&&huntAccess(entry).available).filter(entry=>{const status=familyStatus(entry);return !status.complete&&(!status.best||status.best.rating<17);});
   if(!addMappedHuntNames(entries))return;dirty=true;renderLists();toast(entries.length+' mapped tier targets copied to Your next great find. Save hunt settings to apply.');
 }
 function addTier(rarity,kind){
   if(!draft)return;const access=tierAccess();if(!access.ready){toast(access.reason);return;}
-  const entries=catalog.filter(s=>s.rarity===rarity).filter(s=>{const status=familyStatus(s);return !status.complete&&(kind==='owned'?status.best?.rating>=17&&status.best.id!==state.player.team[0]?.id:(!status.best||status.best.rating<17)&&s.stops.length>0);});
+  const entries=catalog.filter(s=>s.rarity===rarity).filter(s=>{const status=familyStatus(s);return !status.complete&&(kind==='owned'?status.best?.rating>=17&&status.best.id!==state.player.team[0]?.id:(!status.best||status.best.rating<17)&&s.stops.length>0&&huntAccess(s).available);});
   if(kind==='capture'&&!addMappedHuntNames(entries))return;
   draft.replacementNames=[...new Set([...draft.replacementNames,...entries.map(s=>s.name)])];dirty=true;renderLists();toast(entries.length+' '+rarity+' species added'+(kind==='capture'?' to the tier list and Your next great find':'')+'. Save settings to apply.');
 }
@@ -365,7 +433,7 @@ $('desktop-notifications').addEventListener('click',async()=>{
   renderWorkflow();
 });
 function renderHistory(){const records=[...state.history,...state.events].sort((a,b)=>b.time.localeCompare(a.time)).slice(0,300);$('history-count').textContent=state.history.length+' saved records';$('history').replaceChildren();if(!records.length)$('history').append(element('p','muted','Your field notes will appear here.'));for(const record of records){const row=element('div','history-row');const date=new Date(record.time);const time=element('time','',date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));time.title=date.toLocaleString();row.append(time,element('span','',record.message),element('span','badge',record.kind));$('history').append(row);}}
-function render(){const p=state.player;$('connection').textContent=state.reconnecting?'◌ Reconnecting…':state.connected?'● Connected':'● Offline';$('connection').classList.toggle('online',state.connected&&!state.reconnecting);$('account-button').textContent=state.connected?'Sign out ↗':'Sign in ↗';$('account-button').disabled=state.reconnecting||state.busy;$('connect').hidden=state.connected&&!state.reconnecting;$('connect').textContent=state.reconnecting?'Reconnecting…':p&&!state.requiresLogin?'Reconnect ↻':'Connect account ↗';$('connect').disabled=state.reconnecting||state.busy;$('trainer').textContent=p?.name||'Not connected';$('player-level').textContent=p?'Trainer level '+p.level:'Sign in to load your account';$('collection').textContent=p?.roster.length??'—';$('virtue').textContent=p?.virtue??'—';$('wins').textContent=state.wins;$('status').textContent=state.status;$('data-status').textContent=state.dataStatus;$('run').disabled=!state.connected||state.reconnecting||(!state.running&&state.busy);$('run').textContent=state.running?'Ⅱ Pause automation':'▶ Start automation';$('run').classList.toggle('running',state.running);if(!dirty)loadDraft(state.config);else renderTierLists();renderTeam();renderRoster();renderBattle();if(tab==='history')renderHistory();if(tab==='collection')renderCollection();if(tab==='workflow')renderWorkflow();}
+function render(){const p=state.player;$('connection').textContent=state.reconnecting?'◌ Reconnecting…':state.connected?'● Connected':'● Offline';$('connection').classList.toggle('online',state.connected&&!state.reconnecting);$('account-button').textContent=state.connected?'Sign out ↗':'Sign in ↗';$('account-button').disabled=state.reconnecting||state.busy;$('connect').hidden=state.connected&&!state.reconnecting;$('connect').textContent=state.reconnecting?'Reconnecting…':p&&!state.requiresLogin?'Reconnect ↻':'Connect account ↗';$('connect').disabled=state.reconnecting||state.busy;$('trainer').textContent=p?.name||'Not connected';$('player-level').textContent=p?'Trainer level '+p.level:'Sign in to load your account';$('collection').textContent=p?.roster.length??'—';$('virtue').textContent=p?.virtue??'—';$('wins').textContent=state.wins;$('status').textContent=state.status;$('data-status').textContent=state.dataStatus;$('run').disabled=!state.connected||state.reconnecting||(!state.running&&state.busy);$('run').textContent=state.running?'Ⅱ Pause automation':'▶ Start automation';$('run').classList.toggle('running',state.running);if(!dirty)loadDraft(state.config);else if(tab==='hunt')renderLists();else renderTierLists();renderTeam();renderRoster();renderBattle();if(tab==='history')renderHistory();if(tab==='collection')renderCollection();if(tab==='workflow')renderWorkflow();}
 function reconcileHuntTargets(previous,current){
   if(!dirty||!draft)return false;
   const removed=new Set((previous||[]).filter(name=>!(current||[]).includes(name)));
@@ -374,7 +442,7 @@ function reconcileHuntTargets(previous,current){
   draft.names=names;if(!names.includes(draft.primaryTarget))draft.primaryTarget='';return true;
 }
 async function poll(){if(polling||!csrf)return;polling=true;try{const next=await api('state');const targetsChanged=reconcileHuntTargets(state?.config?.names,next.config.names);consumeAlerts(state,next);state=next;if(targetsChanged)renderLists();render();}catch(error){$('status').textContent=error.message;$('connection').textContent='● Backend unavailable';$('run').disabled=true;}finally{polling=false;}}
-$('run').addEventListener('click',async()=>{if(state.running){await post('pause');return;}if(dirty){toast('Save your settings before starting.');return;}const desired=selectedActivity();if(desired!==draft.activity){try{await api('settings',{...draft,activity:desired});await poll();}catch(error){toast(error.message);return;}}await post('start');});
+$('run').addEventListener('click',async()=>{if(state.running){await post('pause');return;}if(selectedActivity()==='wild'&&state.huntAccessVersion!==2){toast('Restart the website backend to load the corrected area access rules before hunting.');return;}if(dirty){toast('Save your settings before starting.');return;}const desired=selectedActivity();if(desired!==draft.activity){try{await api('settings',{...draft,activity:desired});await poll();}catch(error){toast(error.message);return;}}await post('start');});
 $('tier-account-action').addEventListener('click',()=>state?.player&&!state.requiresLogin?post('reconnect'):openLogin());
 function openLogin(){if(!state?.connected&&!state?.reconnecting)$('login-dialog').showModal();}
 $('connect').addEventListener('click',()=>state?.player&&!state.requiresLogin?post('reconnect'):openLogin());$('close-login').addEventListener('click',()=>$('login-dialog').close());
@@ -384,7 +452,7 @@ document.addEventListener('keydown',event=>{if(event.key==='F8'&&state?.connecte
 document.querySelector('[data-tab="history"]').addEventListener('click',()=>{if(state)renderHistory();});
 function fillCatalog(){
   $('species').replaceChildren();for(const s of catalog){const option=element('option');option.value=s.name;$('species').append(option);}
-  $('target-input').placeholder=`Search ${catalog.length} Miscrit families…`;$('mapped-count').textContent=catalog.filter(s=>s.stops.length).length+' with routes';
+  $('target-input').placeholder=`Search ${catalog.length} Miscrits…`;$('mapped-count').textContent=catalog.filter(s=>s.stops.length).length+' with routes';
 }
 try{await bootstrapBrowser();await poll();}catch(error){$('status').textContent=error.message;toast(error.message);}
 setInterval(poll,1800);

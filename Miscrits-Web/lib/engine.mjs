@@ -1,4 +1,5 @@
 import {Transport, GameError} from './transport.mjs';
+import {huntAvailability} from './model.mjs';
 import {DEFAULTS, TRAINING_MIN_RATING, settings, owned, trainingStatus, collectionFamilies, miscritsIndex, selectedTrainingPlan, rotationPlan, routePlan, abilities, decision,targetMatches,atSearchLocation} from './model.mjs';
 import {SessionStats,huntNames,targetQueue,nextSearchStop,stopAdvice} from './workflow.mjs';
 import {ARENAS,isArena,arenaEligibility,draftChoices,arenaTotals} from './arena.mjs';
@@ -73,6 +74,9 @@ export class Engine {
   async refresh() {
     const player=await this.transport.rpc('get_player');
     if (!player.user_id || !Array.isArray(player.miscrits) || !Array.isArray(player.team_order)) throw new GameError('The player response is incomplete.',true);
+    const previous=this.player;
+    if(previous?.user_id===player.user_id)player._huntLimitedObjects=previous._huntLimitedObjects;
+    if(previous?.user_id===player.user_id&&JSON.stringify([previous.boss_achievements,previous.tickets])===JSON.stringify([player.boss_achievements,player.tickets]))player._huntRejectedAreas=previous._huntRejectedAreas;
     this.player=player;
     if(this.config.trainSelected&&this.config.activity!=='arena')await this.refreshIndex();
   }
@@ -112,6 +116,7 @@ export class Engine {
         await this.sequence;
         await this.refresh();
         await this.refreshIndex(true);
+        this.player._huntRejectedAreas={};
         if(epoch!==this.connectionEpoch || this.transport!==transport)return;
         if(this.player.user_id!==userId)throw new GameError('The server restored a different account. Sign out and sign in again.',true);
         if(this.draft){await transport.join(this.draft.id);this.draft.awaiting=false;transport.send(this.draft.id,9,{});}
@@ -168,7 +173,7 @@ export class Engine {
         if (Date.now()-this.battle.updated>45000 || (this.battle.joining && Date.now()-this.battle.created>30000)) throw new GameError('Battle response timed out. Inspect the battle before reconnecting.',true);
         await this.combat(); return;
       }
-      this.nextCycle=Date.now()+3000;
+      this.nextCycle=Date.now()+(this.config.activity==='wild'?this.config.searchIntervalSeconds:3)*1000;
       await this.refresh();
       if (!this.running) return;
       if (this.player.battle) { await this.join(this.player.battle); this.stop('An existing battle was found. Continue it manually.'); return; }
@@ -255,7 +260,7 @@ export class Engine {
         if (fainted===this.player.team_order.length) throw new Error('Heal your team before searching.');
         const routeNames=huntNames(this.config,selectedPlan);
         const route=routePlan({...this.config,names:routeNames},this.player,this.catalog);
-        if (!route.stops.length) throw new Error('No available search locations for the selected targets today. Check map unlocks and tickets.');
+        if (!route.stops.length) throw new Error('No available search locations for the selected targets. '+[...new Set(Object.values(route.availability).map(access=>access.detail||access.reason))].join(' '));
         const now=Date.now();
         const {stop,nextCursor}=nextSearchStop({config:this.config,stops:route.stops,cursor:this.cursor,catalog:this.catalog,cooldowns:this.cooldowns,now});
         this.cursor=nextCursor;
@@ -264,18 +269,29 @@ export class Engine {
         const area=this.player.area;
         if (!atSearchLocation(area,stop,this.protocol)) {
           try {await this.transport.rpc('update_location',{locationId:this.protocol.locations[stop.location],areaId:stop.area_id});}
-          catch(error){error.message+=` Moving to ${searchLabel}.`;error.searchLocation={map:stop.location,area:stop.area_id,object:stop.object_id};throw error;}
+          catch(error){
+            if(error.rejected&&!error.uncertain){
+              this.player._huntRejectedAreas||={};
+              this.player._huntRejectedAreas[stop.location+':'+stop.area_id]=`The server rejected travel to ${stop.location.replaceAll('_',' ')} area ${stop.area_id}. This area is excluded for this session. Check its boss gates, then reload account data or sign in again to recheck access.`;
+            }
+            error.message+=` Moving to ${searchLabel}.`;error.searchLocation={map:stop.location,area:stop.area_id,object:stop.object_id};throw error;
+          }
           this.player.area={area_id:stop.area_id,location:{id:this.protocol.locations[stop.location],name:stop.location}};
           if (!this.running) return;
         }
         // Reserve before sending. Rejected/uncertain mutations are never retried in a loop.
         this.cooldowns.set(stop.key,now+(this.player.left_traits?.includes(100)?21000:31000));
         this.currentSearch=structuredClone(stop);this.stats.searches++;
+        this.nextCycle=Math.max(this.nextCycle,Date.now()+this.config.searchIntervalSeconds*1000);
         let result;
         try {
           result=await this.transport.rpc('create_battle',{type:'Wild',payload:{objectId:stop.object_id}});
         } catch(error) {
           const outcome=error.rejected && error.rpcId==='create_battle' ? error.searchOutcome : null;
+          if(outcome?.limit){
+            this.player._huntLimitedObjects||={};
+            this.player._huntLimitedObjects[stop.key]='The game server reported a daily search limit at '+searchLabel+'. This object is excluded for this session. No reset time or limit count was supplied. The scope may include other targets. Wait until the game allows searching; changing targets is not a confirmed fix.';
+          }
           // Native WorldManager.setup_battle uses success:false for these ordinary outcomes.
           // Only a definitive response permits continuing; unknown/time-out results still stop.
           if (outcome && !outcome.disabled && !outcome.limit && (outcome.cooldown || outcome.drop)) {
@@ -288,7 +304,12 @@ export class Engine {
           throw error;
         }
         this.log(`Searched ${stop.location.replaceAll('_',' ')} · area ${stop.area_id} · object ${stop.object_id}.`);
-        if (result.disabled || result.limit) throw new Error('The game disabled this search object or reached its limit.');
+        if(result.limit){
+          this.player._huntLimitedObjects||={};
+          this.player._huntLimitedObjects[stop.key]='The game server reported a daily search limit at '+searchLabel+'. This object is excluded for this session.';
+          throw new Error('The game server reported a daily search limit. [create_battle] Search: '+searchLabel+'.');
+        }
+        if(result.disabled)throw new Error('The game disabled this search object.');
         if (result.matchId) await this.join(result.matchId);
       }
     } catch(error) { this.fail(error); }
@@ -655,7 +676,7 @@ export class Engine {
     let queue;try{queue=targetQueue({config:this.config,player:p,catalog:this.catalog,metadata:this.metadata,index:this.collectionIndex,cooldowns:this.cooldowns,cursor:this.cursor,currentSearch:this.currentSearch,battle:this.battle});}catch(error){queue={targets:[],current:null,next:null,message:error.message};}
     return {connected:Boolean(p && this.transport?.connected && !this.requiresLogin),reconnecting:this.reconnecting,requiresLogin:this.requiresLogin,connection:this.transport?.diagnostics?.()||{},busy:this.busy,running:this.running,uncertain:this.uncertain,status:this.status,selectedTraining,
       queue,lastStop:this.lastStop,sessionStats:this.stats.snapshot(),wildHealingSpent:this.wildHealingSpent,alerts:this.alerts,profiles:this.profiles.map(p=>({name:p.name})),
-      config:this.config,wins:this.wins,events:this.events,history:this.history,collectionIndex:this.collectionIndex,
+      config:this.config,wins:this.wins,events:this.events,history:this.history,collectionIndex:this.collectionIndex,huntAccessVersion:2,huntAvailability:huntAvailability(p,this.catalog),
       arena:{records:this.arenaRecords,queue:this.arenaQueue?{type:this.arenaQueue.type,status:this.arenaQueue.status,searching:!this.arenaQueue.cancelled&&!this.arenaQueue.matched,elapsedSeconds:Math.floor((Date.now()-this.arenaQueue.started)/1000)}:null,run:this.arenaRun},draft:this.draft?structuredClone(this.draft):null,
       player:p?{username:p.username,name:p.display_name||p.username,level:p.level,virtue:p.virtue,gold:p.gold,platinum:p.platinum,area:p.area,team:p.team_order.map(id=>roster.find(m=>m.id===id)).filter(Boolean),roster}:null,
       battle:this.battle ? structuredClone(this.battle) : null};
