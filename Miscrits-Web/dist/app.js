@@ -2,6 +2,10 @@
 const RATING_GRADES=['F-','F','F+','D','D+','C','C+','B','B+','A','A+','S','S+'].map((grade,index)=>({grade,value:index+6}));
 function ratingLabel(value){return value===0?'Any grade':RATING_GRADES.find(item=>item.value===Number(value))?.grade||String(value)+'/18';}
 
+// Preserve the old unrestricted mode as the unified any-species choice + Any grade.
+function captureModeSelection(config){
+  return config.mode==='capture_any'?{mode:'capture_rated',minRating:0}:{mode:config.mode,minRating:config.minRating};
+}
 const $=id=>document.getElementById(id);
 let csrf='',catalog=[],state=null,tab='hunt',draft=null,dirty=false,posting=false,polling=false,lastBattleId='',toastTimer;
 const copy=value=>structuredClone(value);
@@ -115,7 +119,7 @@ function renderLists(){
   }
   renderHuntBrowser();renderTierLists();renderRoster();
 }
-function loadDraft(config){draft=copy(config);loadArenaDraft();$('mode').value=draft.mode;$('rating').value=draft.minRating;$('search-interval').value=draft.searchIntervalSeconds??8;$('threshold').value=draft.captureThreshold;$('capture-low-rating').checked=draft.captureLowRatedTargets;$('remove-captured-targets').checked=draft.autoRemoveCapturedTargets;$('max-attacks').value=draft.maxAttacks;$('flee').checked=draft.fleeUnwanted;$('campaign-limit').value=draft.campaignLimit;$('replace').checked=draft.autoReplace;$('auto-level').checked=draft.autoLevel;$('train-selected').checked=draft.trainSelected;$('replace').disabled=draft.trainSelected;$('wild-heal').checked=draft.wildAutoHeal;$('wild-heal-budget').value=draft.wildHealBudget;$('notify-events').checked=draft.notifyEvents;renderLists();modeHelp();}
+function loadDraft(config){draft=copy(config);const selection=captureModeSelection(draft);loadArenaDraft();$('mode').value=selection.mode;$('rating').value=selection.minRating;$('search-interval').value=draft.searchIntervalSeconds??8;$('threshold').value=draft.captureThreshold;$('capture-low-rating').checked=draft.captureLowRatedTargets;$('remove-captured-targets').checked=draft.autoRemoveCapturedTargets;$('max-attacks').value=draft.maxAttacks;$('flee').checked=draft.fleeUnwanted;$('campaign-limit').value=draft.campaignLimit;$('replace').checked=draft.autoReplace;$('auto-level').checked=draft.autoLevel;$('train-selected').checked=draft.trainSelected;$('replace').disabled=draft.trainSelected;$('wild-heal').checked=draft.wildAutoHeal;$('wild-heal-budget').value=draft.wildHealBudget;$('notify-events').checked=draft.notifyEvents;renderLists();modeHelp();}
 let ratingRenderKey='';
 function renderRatingGrades(disabled){
   const value=Number($('rating').value),key=value+':'+disabled;if(key===ratingRenderKey)return;ratingRenderKey=key;
@@ -129,8 +133,8 @@ function renderRatingGrades(disabled){
 }
 function modeHelp(){
   const mode=$('mode').value,automatic=mode.startsWith('capture_'),override=$('capture-low-rating').checked;
-  const ignored=['fight','capture_any','capture_missing'].includes(mode)||(mode==='capture_targeted'&&override);
-  const help={manual_target:'Pause on a matching target so you can battle manually.',capture_targeted:'Search your selected targets and catch matching encounters.',capture_any:'Catch every wild family, regardless of grade.',capture_missing:'Catch families missing from your collection. Evolved copies count as the same family.',capture_rated:'Catch any encountered family that meets your minimum grade.',fight:'Fight encounters for XP without capturing.'};
+  const ignored=['fight','capture_missing'].includes(mode)||(mode==='capture_targeted'&&override);
+  const help={manual_target:'Pause on a matching target so you can battle manually.',capture_targeted:'Catch only species in your selected targets. Choose the minimum grade below.',capture_missing:'Catch families missing from your collection. Evolved copies count as the same family.',capture_rated:'Catch any encountered species. Choose the minimum grade below, or Any for no grade restriction.',fight:'Fight encounters for XP without capturing.'};
   $('mode-help').textContent=help[mode];renderRatingGrades(ignored);
   $('rating-help').textContent=ignored?(override&&mode==='capture_targeted'?'Any grade is allowed because the advanced minimum-grade override is on.':'This mode does not use a minimum grade.'):'Choose the lowest grade to accept. '+ratingLabel(Number($('rating').value))+' ('+$('rating').value+'/18) is selected.';
   $('threshold').disabled=!automatic;
