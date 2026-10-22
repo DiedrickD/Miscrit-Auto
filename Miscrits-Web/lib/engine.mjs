@@ -4,11 +4,13 @@ import {DEFAULTS, TRAINING_MIN_RATING, settings, owned, trainingStatus, collecti
 import {SessionStats,huntNames,targetQueue,nextSearchStop,stopAdvice} from './workflow.mjs';
 import {ARENAS,isArena,arenaEligibility,draftChoices,arenaTotals} from './arena.mjs';
 import {arenaDecision} from './arena-strategy.mjs';
+import {teamVitals,teamSwap} from './team.mjs';
 
 export class Engine {
-  constructor({catalog,protocol,config={},save=()=>{},history=[],saveHistory=()=>{},profiles=[],saveProfiles=()=>{},transportFactory}) {
+  constructor({catalog,protocol,config={},save=()=>{},history=[],saveHistory=()=>{},profiles=[],saveProfiles=()=>{},transportFactory,manualTeamManagement=false}) {
     Object.assign(this,{catalog,protocol,save,saveHistory});
-    this.config=settings({...DEFAULTS,...config},catalog); this.metadata=new Map(catalog.species.map(s=>[s.id,s]));
+    this.manualTeamManagement=manualTeamManagement;
+    this.config=settings(this.teamConfig({...DEFAULTS,...config}),catalog); this.metadata=new Map(catalog.species.map(s=>[s.id,s]));
     this.events=[]; this.history=history; this.status='Sign in to your Miscrits account.';
     this.player=null; this.battle=null; this.running=false; this.busy=false; this.uncertain=false;
     this.reconnecting=false;this.requiresLogin=false;this.connectionEpoch=0;
@@ -132,12 +134,55 @@ export class Engine {
     })().finally(()=>{if(this.recoveryPromise===recovery)this.recoveryPromise=null;});
     this.recoveryPromise=recovery;return recovery;
   }
+  teamConfig(value){return this.manualTeamManagement?{...value,trainSelected:false,autoReplace:false,replacementNames:[]}:value;}
+  updateTeamSettings(value){
+    if(!this.player||!this.transport?.connected||this.requiresLogin)throw new Error('Sign in before changing team settings.');
+    if(typeof value.autoLevel!=='boolean'||!Array.isArray(value.platinumUpgradeIds))throw new Error('Invalid training settings.');
+    if(value.platinumUpgradeIds.some(id=>!this.player.miscrits.some(m=>m.id===id)))throw new Error('Platinum upgrades must refer to owned Miscrits.');
+    this.updateConfig({...this.config,autoLevel:value.autoLevel,platinumUpgradeIds:value.platinumUpgradeIds,trainSelected:false,autoReplace:false,replacementNames:[]});
+  }
+  async swapTeam(value){
+    if(!this.player||!this.transport?.connected||this.requiresLogin)throw new Error('Sign in before changing your team.');
+    if(this.running||this.busy||this.reconnecting||this.battle||this.player.battle||this.draft||this.arenaQueue?.ticket||this.arenaCancelPromise)throw new Error('Pause automation and finish the battle or arena queue before swapping.');
+    if(this.uncertain)throw new Error('Reconnect and check your team before swapping after an uncertain request.');
+    if(!Array.isArray(value.expectedTeam)||value.expectedTeam.some(id=>!Number.isSafeInteger(id)))throw new Error('Reload your team before swapping.');
+    teamSwap(this.player.team_order,this.player.miscrits,value.miscritId,value.slot);
+    this.busy=true;let acknowledged=false;
+    try{
+      const transport=this.transport,epoch=this.connectionEpoch,userId=this.player.user_id;
+      await this.refresh();
+      if(this.transport!==transport||this.connectionEpoch!==epoch||this.player?.user_id!==userId)throw new Error('The account changed. Reload before swapping.');
+      if(this.player.battle||this.battle||this.running||this.reconnecting)throw new Error('Finish the active battle before swapping.');
+      if(JSON.stringify(value.expectedTeam)!==JSON.stringify(this.player.team_order))throw new Error('Your team changed. Review the refreshed slots and try again.');
+      const after=teamSwap(this.player.team_order,this.player.miscrits,value.miscritId,value.slot);
+      if(JSON.stringify(after)===JSON.stringify(this.player.team_order))return;
+      await transport.rpc('update_team',{team:after});
+      acknowledged=true;
+      await this.refresh();
+      if(this.transport!==transport||this.connectionEpoch!==epoch||this.player?.user_id!==userId||JSON.stringify(this.player.team_order)!==JSON.stringify(after))throw new GameError('The team save could not be confirmed. Reconnect before another swap.',true);
+      this.log('Active team updated.');
+    }catch(error){if(acknowledged&&!error.uncertain)error=new GameError('The team save could not be confirmed. Reconnect before another swap.',true);this.fail(error);throw error;}finally{this.busy=false;}
+  }
+  async upgradeTrainingBonus(id){
+    if(!this.running||!this.config.autoLevel||!this.config.platinumUpgradeIds.includes(id)||!this.player.team_order.includes(id))return;
+    const raw=this.player.miscrits.find(m=>m.id===id),member=owned(raw,this.metadata),bonus=teamVitals(raw,this.metadata.get(member.mId)).bonusLevel;
+    const cost=bonus===null?null:member.level-bonus;
+    if(cost===0)return;
+    if(cost!==1)throw new Error('Platinum bonus paused: this copy needs '+(cost===null?'an unknown number of':cost)+' platinum to catch up. Only 1-platinum upgrades after a new level are enabled.');
+    if(!Number.isFinite(this.player.platinum)||this.player.platinum<1)throw new Error('Not enough platinum for the selected bonus upgrade. Automation paused.');
+    const beforeBalance=this.player.platinum;
+    await this.transport.rpc('add_bonus',{miscritId:id,currLevel:member.level});
+    try{await this.refresh();}catch{throw new GameError('The platinum bonus purchase could not be confirmed. Reconnect before continuing; the purchase was not retried.',true);}
+    const updated=this.player.miscrits.find(m=>m.id===id);
+    if(!updated||teamVitals(updated,this.metadata.get(member.mId)).bonusLevel!==member.level||this.player.platinum!==beforeBalance-1)throw new GameError('The platinum bonus purchase could not be confirmed. Reconnect before continuing; the purchase was not retried.',true);
+    this.log(member.name+' bonus upgraded for 1 platinum.');
+  }
   updateConfig(value) {
     if(this.draft||this.arenaCancelPromise||this.arenaQueue?.ticket)throw new Error('Finish the arena draft or cancel the queue before changing settings.');
     if(this.battle&&value.arenaType!==undefined&&value.arenaType!==this.config.arenaType)throw new Error('Finish the current battle before changing arena mode.');
     if (this.running || this.busy || this.reconnecting) throw new Error('Pause and wait for the current request before changing settings.');
     if (this.battle && value.activity!==this.config.activity) throw new Error('Finish the current battle before changing activity.');
-    const next=settings(value,this.catalog); this.save(next); this.config=next; this.cursor=0;
+    const next=settings(this.teamConfig(value),this.catalog); this.save(next); this.config=next; this.cursor=0;
     this.log('Settings saved.');
   }
   start() {
@@ -213,6 +258,7 @@ export class Engine {
           this.record('training',`${before.name}: level ${before.level} → ${before.level+1} with earned XP`,before);
           this.log(`${before.name} reached level ${before.level+1} with earned XP.`);
           this.stats.levels++;if(before.level+1===(selectedPlan&&team.indexOf(before.id)>0?30:35))this.notify('training',`${before.name} finished training at level ${before.level+1}.`);
+          await this.upgradeTrainingBonus(before.id);
           return; // One level per cycle; recheck pause, team and XP before any next action.
         }
       }
@@ -670,13 +716,13 @@ export class Engine {
   }
   snapshot() {
     const p=this.player;
-    const roster=p ? p.miscrits.map(m=>({...owned(m,this.metadata),...trainingStatus(m,this.protocol)})) : [];
+    const roster=p ? p.miscrits.map(m=>({...owned(m,this.metadata),...trainingStatus(m,this.protocol),...teamVitals(m,this.metadata.get(Number(m.v===2?m.m:m.mId)))})) : [];
     let selectedTraining=null;
     if(p && this.config.trainSelected){try{selectedTraining=selectedTrainingPlan(p,this.config.replacementNames,this.catalog,this.metadata,this.collectionIndex);}catch(error){selectedTraining={error:error.message};}}
     let queue;try{queue=targetQueue({config:this.config,player:p,catalog:this.catalog,metadata:this.metadata,index:this.collectionIndex,cooldowns:this.cooldowns,cursor:this.cursor,currentSearch:this.currentSearch,battle:this.battle});}catch(error){queue={targets:[],current:null,next:null,message:error.message};}
     return {connected:Boolean(p && this.transport?.connected && !this.requiresLogin),reconnecting:this.reconnecting,requiresLogin:this.requiresLogin,connection:this.transport?.diagnostics?.()||{},busy:this.busy,running:this.running,uncertain:this.uncertain,status:this.status,selectedTraining,
       queue,lastStop:this.lastStop,sessionStats:this.stats.snapshot(),wildHealingSpent:this.wildHealingSpent,alerts:this.alerts,profiles:this.profiles.map(p=>({name:p.name})),
-      config:this.config,wins:this.wins,events:this.events,history:this.history,collectionIndex:this.collectionIndex,huntAccessVersion:2,huntAvailability:huntAvailability(p,this.catalog),
+      config:this.config,wins:this.wins,events:this.events,history:this.history,collectionIndex:this.collectionIndex,huntAccessVersion:2,teamManagementVersion:1,huntAvailability:huntAvailability(p,this.catalog),
       arena:{records:this.arenaRecords,queue:this.arenaQueue?{type:this.arenaQueue.type,status:this.arenaQueue.status,searching:!this.arenaQueue.cancelled&&!this.arenaQueue.matched,elapsedSeconds:Math.floor((Date.now()-this.arenaQueue.started)/1000)}:null,run:this.arenaRun},draft:this.draft?structuredClone(this.draft):null,
       player:p?{username:p.username,name:p.display_name||p.username,level:p.level,virtue:p.virtue,gold:p.gold,platinum:p.platinum,area:p.area,team:p.team_order.map(id=>roster.find(m=>m.id===id)).filter(Boolean),roster}:null,
       battle:this.battle ? structuredClone(this.battle) : null};

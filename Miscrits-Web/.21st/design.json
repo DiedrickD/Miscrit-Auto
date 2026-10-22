@@ -13,7 +13,8 @@
   },
   "sources": {
     "tokens": [
-      "src/styles.css"
+      "src/styles.css",
+      "src/team.css"
     ],
     "components": [
       "src/App.jsx",
@@ -67,7 +68,9 @@
     "Capture rules use compact colored grade badges matching native F- through S+ totals, a mode-aware summary, and explicit minimum-grade override wording.",
     "React component shell and panels, React Icons navigation, plain task headings and compact surfaces.",
     "Dark mode is the default regardless of OS preference; the optional light-mode choice persists locally.",
-    "Preserve existing automation controller and local Node API during frontend migration."
+    "Preserve existing automation controller and local Node API during frontend migration.",
+    "Your team uses a compact active-team header with immediate-save auto level-up, per-copy platinum bonus switches, distinct green HP/blue XP bars and a paginated owned inventory.",
+    "Inventory supports native drag/drop and keyboard/tap slot selection. No automatic selection, tier-training or replacement controls are shown."
   ],
   "evidence": [
     "Context7 React integration documentation consulted; 21st catalog search unavailable; CLI review completed."

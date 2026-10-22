@@ -1,13 +1,13 @@
 [
   {
     "path": ".21st/DESIGN.md",
-    "bytes": 1257,
-    "sha256": "663A1EBFF299F0614806A34298EADA2E042B5B2B3505A23BF94DE9070AC67085"
+    "bytes": 1722,
+    "sha256": "747A7A81B8C89498627C63D6D912D876ABC0A01F0DFF740F20AD868F7274CB1A"
   },
   {
     "path": ".21st/design.json",
-    "bytes": 2254,
-    "sha256": "A23BBC6F3A0D6C79F8419095C5DD03AE821D1236F2CB31560CACC04824C6398B"
+    "bytes": 2609,
+    "sha256": "6721EF094DC7A0539FD360B150B015F0125F262BD26638D13B02053C6A82343F"
   },
   {
     "path": ".gitignore",
@@ -17,12 +17,12 @@
   {
     "path": "Launch.ps1",
     "bytes": 1290,
-    "sha256": "36913B09D1047B2B87E0C5B36CF0116F36A08CD700BEA5D053BB12A75399505D"
+    "sha256": "190B8B287CE6DB148C4F071F8460B22EB6FF4141358B50B4F8F33F9BCE1CDCE7"
   },
   {
     "path": "README.md",
-    "bytes": 19526,
-    "sha256": "CF35FABF54331F2954CADE7E9353A8AAAD70E4CBD40BF8EAF8C76014AF4729F7"
+    "bytes": 16266,
+    "sha256": "DA4DD38266AD8B806BDCF274F549FDB050597F37A2CD6198105A8645BB129AD0"
   },
   {
     "path": "SIZE-LIMITS.json",
@@ -46,8 +46,8 @@
   },
   {
     "path": "dist/app.js",
-    "bytes": 313412,
-    "sha256": "A6BDB180ED52DED245F4CC0D2E5DBF2F51BEA2BE5FE7D8D07CCBDF15699C38E1"
+    "bytes": 314795,
+    "sha256": "1FBDFC446A177F2BAC0FEC65C5BA87240737B1BB784F7BC746E0C87DE8F8C9E3"
   },
   {
     "path": "dist/index.html",
@@ -61,8 +61,8 @@
   },
   {
     "path": "dist/style.css",
-    "bytes": 40441,
-    "sha256": "2AB3CB6131F142E03229BA0EC7BF52106A9115811A4551314576E85192FB4F20"
+    "bytes": 49009,
+    "sha256": "6DECB0D016AA3B57A28FFB936DEDB6563D680F1A6D16E0F8B2B9877827548C10"
   },
   {
     "path": "index.html",
@@ -81,13 +81,18 @@
   },
   {
     "path": "lib/engine.mjs",
-    "bytes": 55939,
-    "sha256": "F65DD8C34B4D693D628F1A578A8E1A356BE104E429CC870670597DE4CAADDF55"
+    "bytes": 60610,
+    "sha256": "8FE3C0183DA516CA178B0B52D3220CE9505A17CB834D567D9834AB2F6ACE454E"
   },
   {
     "path": "lib/model.mjs",
-    "bytes": 17684,
-    "sha256": "A7740335F0156D1FE9C501B5A3262CFE9F6B4E39CF1D97AE6C06B3A9CC4DF359"
+    "bytes": 18036,
+    "sha256": "1B8890F12825399D7AFDCD073053E711598E70B3C987FF9E613CAA27EC926810"
+  },
+  {
+    "path": "lib/team.mjs",
+    "bytes": 2485,
+    "sha256": "FB1C375D84EC323133D40B3E6CCE99F808D18ED1013F361BE5847EABB9AD55CB"
   },
   {
     "path": "lib/transport.mjs",
@@ -136,8 +141,8 @@
   },
   {
     "path": "server.mjs",
-    "bytes": 9597,
-    "sha256": "0E7DA671039FE4AACF53C4A92EAEC730008E1706FBB72E2E7CF20260CF55F095"
+    "bytes": 9771,
+    "sha256": "FDC3CF00789C09CEF1DC44589C1CC5FA1E083246228A37E5FB24239683E6E359"
   },
   {
     "path": "src/App.jsx",
@@ -156,13 +161,13 @@
   },
   {
     "path": "src/controller.js",
-    "bytes": 59514,
-    "sha256": "86E7829CA54F4BB73B890C7ED9B2417C676B956D4344449E0EC9B71EF4B79029"
+    "bytes": 53497,
+    "sha256": "576879A41D763B063E6A7B2E82FD5B2682559BB419A82FE7C8F3E64D925B8A3F"
   },
   {
     "path": "src/main.jsx",
-    "bytes": 512,
-    "sha256": "2FDBA2597911358F2378A52C5E30942235472E4DD80FE4F8D4C1C863E9ACBD82"
+    "bytes": 533,
+    "sha256": "5BD46FCF9C3A9952CF823B765CA1074B8C3850976DF47297AA6E0C60FEB5B78A"
   },
   {
     "path": "src/panels/ArenaPanel.jsx",
@@ -176,8 +181,8 @@
   },
   {
     "path": "src/panels/CampaignPanel.jsx",
-    "bytes": 1971,
-    "sha256": "2F613E4ED473BEC4BADB73C353FC8EA51446A27C13EDDF4ACFB15CCAEC1D9917"
+    "bytes": 1952,
+    "sha256": "D66D90871F823F45D4B53DCA5EBFF1C8CF3AA87B68200A3121911F2584B817BC"
   },
   {
     "path": "src/panels/CollectionPanel.jsx",
@@ -191,13 +196,13 @@
   },
   {
     "path": "src/panels/HuntPanel.jsx",
-    "bytes": 9400,
-    "sha256": "7806464FE9E44BD1273215A7D1C22971136E4FFEB03B0711FF1E4342A929B1A8"
+    "bytes": 8971,
+    "sha256": "874265394E3758954F4FAF1B91495802C9D2390CA25FB6360D2136ED98003EA2"
   },
   {
     "path": "src/panels/TeamPanel.jsx",
-    "bytes": 4130,
-    "sha256": "7A7C899E9EF717E4747D18D71D6FD6B6E51844BA61AF243A7D8FE109D5ABBC27"
+    "bytes": 18603,
+    "sha256": "1807E4AC703A4162353EBF7BF21E0D5C65FDE293C340188EC130435A7002C6FA"
   },
   {
     "path": "src/panels/WorkflowPanel.jsx",
@@ -208,6 +213,16 @@
     "path": "src/styles.css",
     "bytes": 17159,
     "sha256": "A620C17617E47CD8662FB8D3CAEB56E4AC2D434BC977AEBD0A6C89B7ACEBEADD"
+  },
+  {
+    "path": "src/team-store.js",
+    "bytes": 1169,
+    "sha256": "617C2575AF1E0AE170275C3177A17D0308305B9D7FF5D7D5B07A11A3AB52CBB7"
+  },
+  {
+    "path": "src/team.css",
+    "bytes": 10671,
+    "sha256": "BD26F85658B8FEE469F42C93A172670FBB8CFE19557EC8EB0E77BF964823B62C"
   },
   {
     "path": "test/arena-strategy.test.mjs",
@@ -251,8 +266,8 @@
   },
   {
     "path": "test/frontend.test.mjs",
-    "bytes": 2850,
-    "sha256": "A27FFCAE53EDE2D099952E7C4D0A90E00CD59B240D13ADCE507A7E38FC9F7B0F"
+    "bytes": 2820,
+    "sha256": "A87BEBB80C80493444B2159C88B98744AABDDE62B451B27E9B2B1EDEAF835933"
   },
   {
     "path": "test/hunt-availability.test.mjs",
@@ -277,12 +292,17 @@
   {
     "path": "test/server.test.mjs",
     "bytes": 3295,
-    "sha256": "80066E1124FB22ACEDBA07576CAF42DE48696B2E616CE1BC3198601A5BD519D0"
+    "sha256": "7B77869736DF5B428485189FA806FC7EB32BA7D472DEB8DC9DF62FD1E8F559BD"
   },
   {
     "path": "test/target-removal.test.mjs",
     "bytes": 5796,
     "sha256": "1109C4534BE335DCAC4BA8CE18C3AAA80B6C8C3CB0CC908964690D023E18FC55"
+  },
+  {
+    "path": "test/team.test.mjs",
+    "bytes": 11280,
+    "sha256": "70703426419FA1A34E26ED1CE78D7BEFD37C05E903550062EFA0741AE75D0AFF"
   },
   {
     "path": "test/tier-index.test.mjs",
@@ -293,6 +313,11 @@
     "path": "test/training.test.mjs",
     "bytes": 5713,
     "sha256": "83CE08C0F48A14D496A8E702C591FBADA4FC2C9491004016AA1AE032E972FB80"
+  },
+  {
+    "path": "test/ui/team.spec.js",
+    "bytes": 8556,
+    "sha256": "956AF65D11B2BDB0A9A06ACF96BA428FEB8FC70E3D82707C0A63BB0ABEA0B84B"
   },
   {
     "path": "test/ui/workspace.spec.js",

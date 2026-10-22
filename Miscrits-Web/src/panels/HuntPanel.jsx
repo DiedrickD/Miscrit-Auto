@@ -103,25 +103,13 @@ export default function HuntPanel() {
             No targets yet. Choose a portrait above.
           </p>
           <details className="hunt-details">
-            <summary>Route order &amp; training targets</summary>
+            <summary>Route order</summary>
             <p className="fine-print">
               Use &#8593; / &#8595; to set the order. &#9733; Main searches a
               target first when ready. Unavailable targets are skipped until
               their map or schedule opens.
             </p>
             <div id="hunt-route-list" className="hunt-route-list"></div>
-            <button
-              id="import-tier-targets"
-              type="button"
-              className="button small subtle"
-              disabled
-            >
-              Add available training targets
-            </button>
-            <p className="fine-print">
-              Copies selected training species that still need a 17+ copy and
-              can be hunted today.
-            </p>
           </details>
           <div className="card-footer">
             <span className="mint-dot"></span> Save settings after changing

@@ -1,3 +1,4 @@
+import {teamStore} from './team-store.js';
 // Compatibility controller: preserves existing game policies and API behavior.
 // React owns the component tree; this module updates dedicated controls and result containers.
 export function initializeWorkspace(){
@@ -60,12 +61,10 @@ $('hunt-prev').addEventListener('click',()=>{huntPage--;renderHuntBrowser();});
 $('hunt-next').addEventListener('click',()=>{huntPage++;renderHuntBrowser();});
 $('hunt-add-visible').addEventListener('click',()=>{if(!draft)return;const entries=filteredHuntEntries().filter(entry=>huntAccess(entry).available&&!draft.names.includes(entry.name));if(!addMappedHuntNames(entries))return;dirty=true;renderLists();toast(entries.length+' targets added. Save hunt settings to apply.');});
 $('target-form').addEventListener('submit',event=>{event.preventDefault();addName($('target-input'),'names');});
-$('import-tier-targets').addEventListener('click',importTierTargets);
 $('clear-all-targets').addEventListener('click',()=>{
   if(!draft||!draft.names.length)return;
   draft.names=[];draft.primaryTarget='';dirty=true;renderLists();toast('All hunt targets cleared. Save hunt settings to apply. Tier training selections are unchanged.');
 });
-$('replacement-form').addEventListener('submit',event=>{event.preventDefault();addName($('replacement-input'),'replacementNames');});
 function removeName(key,name){draft[key]=draft[key].filter(n=>n!==name);if(key==='names'&&draft.primaryTarget===name)draft.primaryTarget='';dirty=true;renderLists();}
 function moveTarget(name,delta){
   const from=draft.names.indexOf(name),to=from+delta;
@@ -120,9 +119,9 @@ function renderLists(){
     const route=element('div','hunt-route-row');route.dataset.targetOrder=String(index);route.append(element('span','',(index+1)+'. '+name),controls);$('hunt-route-list').append(route);
   }
   }
-  renderHuntBrowser();renderTierLists();renderRoster();
+  renderHuntBrowser();
 }
-function loadDraft(config){draft=copy(config);const selection=captureModeSelection(draft);loadArenaDraft();$('mode').value=selection.mode;$('rating').value=selection.minRating;$('search-interval').value=draft.searchIntervalSeconds??8;$('threshold').value=draft.captureThreshold;$('capture-low-rating').checked=draft.captureLowRatedTargets;$('remove-captured-targets').checked=draft.autoRemoveCapturedTargets;$('max-attacks').value=draft.maxAttacks;$('flee').checked=draft.fleeUnwanted;$('campaign-limit').value=draft.campaignLimit;$('replace').checked=draft.autoReplace;$('auto-level').checked=draft.autoLevel;$('train-selected').checked=draft.trainSelected;$('replace').disabled=draft.trainSelected;$('wild-heal').checked=draft.wildAutoHeal;$('wild-heal-budget').value=draft.wildHealBudget;$('notify-events').checked=draft.notifyEvents;renderLists();modeHelp();}
+function loadDraft(config){draft=copy(config);const selection=captureModeSelection(draft);loadArenaDraft();$('mode').value=selection.mode;$('rating').value=selection.minRating;$('search-interval').value=draft.searchIntervalSeconds??8;$('threshold').value=draft.captureThreshold;$('capture-low-rating').checked=draft.captureLowRatedTargets;$('remove-captured-targets').checked=draft.autoRemoveCapturedTargets;$('max-attacks').value=draft.maxAttacks;$('flee').checked=draft.fleeUnwanted;$('campaign-limit').value=draft.campaignLimit;$('wild-heal').checked=draft.wildAutoHeal;$('wild-heal-budget').value=draft.wildHealBudget;$('notify-events').checked=draft.notifyEvents;renderLists();modeHelp();}
 let ratingRenderKey='';
 function renderRatingGrades(disabled){
   const value=Number($('rating').value),key=value+':'+disabled;if(key===ratingRenderKey)return;ratingRenderKey=key;
@@ -142,10 +141,10 @@ function modeHelp(){
   $('rating-help').textContent=ignored?(override&&mode==='capture_targeted'?'Any grade is allowed because the advanced minimum-grade override is on.':'This mode does not use a minimum grade.'):'Choose the lowest grade to accept. '+ratingLabel(Number($('rating').value))+' ('+$('rating').value+'/18) is selected.';
   $('threshold').disabled=!automatic;
   const grade=ratingLabel(Number($('rating').value));
-  $('capture-plan').textContent=!automatic?(mode==='fight'?'Fight only. No capture attempts.':'Pause on matching targets. You control the battle and capture.'):'Free capture at '+$('threshold').value+'% or higher. '+(ignored?'No minimum grade for this mode.':grade==='Any grade'?'Any grade accepted.':'Accept '+grade+' or higher.')+(override&&['capture_rated','capture_missing'].includes(mode)?' Selected targets may bypass this minimum.':'')+($('train-selected').checked?' Training upgrades still seek S or S+ unless the override is on.':'');
+  $('capture-plan').textContent=!automatic?(mode==='fight'?'Fight only. No capture attempts.':'Pause on matching targets. You control the battle and capture.'):'Free capture at '+$('threshold').value+'% or higher. '+(ignored?'No minimum grade for this mode.':grade==='Any grade'?'Any grade accepted.':'Accept '+grade+' or higher.')+(override&&['capture_rated','capture_missing'].includes(mode)?' Selected targets may bypass this minimum.':'');
 }
-['mode','rating','search-interval','threshold','max-attacks','flee','campaign-limit','replace','auto-level','train-selected','capture-low-rating','remove-captured-targets','wild-heal','wild-heal-budget','notify-events'].forEach(id=>$(id).addEventListener('input',()=>{if(!draft)return;dirty=true;draft.trainSelected=$('train-selected').checked;$('replace').disabled=draft.trainSelected;renderRoster();modeHelp();}));
-function formConfig(){return {...draft,activity:selectedActivity(),arenaType:$('arena-type').value,arenaStrategy:$('arena-strategy').value,arenaBattleLimit:Number($('arena-limit').value),arenaStopOnLoss:$('arena-stop-loss').checked,arenaAllowInjured:$('arena-injured').checked,mode:$('mode').value,minRating:Number($('rating').value),searchIntervalSeconds:Number($('search-interval').value),captureThreshold:Number($('threshold').value),captureLowRatedTargets:$('capture-low-rating').checked,autoRemoveCapturedTargets:$('remove-captured-targets').checked,maxAttacks:Number($('max-attacks').value),fleeUnwanted:$('flee').checked,campaignLimit:Number($('campaign-limit').value),autoLevel:$('auto-level').checked,trainSelected:$('train-selected').checked,autoReplace:$('replace').checked,wildAutoHeal:$('wild-heal').checked,wildHealBudget:Number($('wild-heal-budget').value),notifyEvents:$('notify-events').checked};}
+['mode','rating','search-interval','threshold','max-attacks','flee','campaign-limit','capture-low-rating','remove-captured-targets','wild-heal','wild-heal-budget','notify-events'].forEach(id=>$(id).addEventListener('input',()=>{if(!draft)return;dirty=true;modeHelp();}));
+function formConfig(){return {...draft,activity:selectedActivity(),arenaType:$('arena-type').value,arenaStrategy:$('arena-strategy').value,arenaBattleLimit:Number($('arena-limit').value),arenaStopOnLoss:$('arena-stop-loss').checked,arenaAllowInjured:$('arena-injured').checked,mode:$('mode').value,minRating:Number($('rating').value),searchIntervalSeconds:Number($('search-interval').value),captureThreshold:Number($('threshold').value),captureLowRatedTargets:$('capture-low-rating').checked,autoRemoveCapturedTargets:$('remove-captured-targets').checked,maxAttacks:Number($('max-attacks').value),fleeUnwanted:$('flee').checked,campaignLimit:Number($('campaign-limit').value),autoLevel:state.config.autoLevel,platinumUpgradeIds:state.config.platinumUpgradeIds||[],trainSelected:false,autoReplace:false,wildAutoHeal:$('wild-heal').checked,wildHealBudget:Number($('wild-heal-budget').value),notifyEvents:$('notify-events').checked};}
 function selectedActivity(){return tab==='arena'?'arena':tab==='campaign'?'campaign':tab==='hunt'?'wild':draft.activity;}
 function loadArenaDraft(){
   $('arena-type').value=draft.arenaType||'Default';$('arena-strategy').value=draft.arenaStrategy||'smart';$('arena-limit').value=draft.arenaBattleLimit??10;$('arena-stop-loss').checked=draft.arenaStopOnLoss??true;$('arena-injured').checked=draft.arenaAllowInjured??false;arenaRules();
@@ -332,36 +331,9 @@ function addTier(rarity,kind){
   if(kind==='capture'&&!addMappedHuntNames(entries))return;
   draft.replacementNames=[...new Set([...draft.replacementNames,...entries.map(s=>s.name)])];dirty=true;renderLists();toast(entries.length+' '+rarity+' species added'+(kind==='capture'?' to the tier list and Your next great find':'')+'. Save settings to apply.');
 }
-function renderTierLists(){
-  const access=tierAccess();$('import-tier-targets').disabled=!access.ready;$('import-tier-targets').title=access.ready?'Copy selected mapped species that still need 17+ copies into the hunt list.':access.reason;$('tier-access').textContent=access.reason;const accountButton=$('tier-account-action');accountButton.hidden=!access.action;accountButton.textContent=access.action;accountButton.disabled=Boolean(state?.busy||state?.reconnecting);
-  const container=$('replacement-list');const open=new Set([...container.querySelectorAll('details[open]')].map(el=>el.dataset.tier));const initial=!container.children.length;container.replaceChildren();
-  for(const rarity of trainingTiers){
-    const entries=catalog.filter(s=>s.rarity===rarity),selected=entries.filter(s=>draft.replacementNames.includes(s.name));
-    const eligible=entries.filter(s=>{const v=familyStatus(s);return !v.complete&&v.best?.rating>=17;}).length;
-    const complete=entries.filter(s=>familyStatus(s).complete).length;
-    const group=element('details','tier-group');group.dataset.tier=rarity;group.open=open.has(rarity)||(initial&&(rarity==='Exotic'||selected.length>0));
-    group.append(element('summary','',rarity+' - '+selected.length+' selected / '+eligible+' 17+ ready / '+complete+' complete'));
-    const actions=element('div','tier-actions');
-    for(const [label,kind]of [['Add owned 17+','owned'],['Add mapped capture targets','capture']]){const button=element('button','button small',label);button.type='button';button.disabled=!access.ready;button.title=access.ready?'Add '+rarity+' species to your list; save settings to apply.':access.reason;button.addEventListener('click',()=>addTier(rarity,kind));actions.append(button);}
-    const clear=element('button','button small subtle','Clear tier');clear.type='button';clear.disabled=!selected.length;clear.title=selected.length?'Remove this tier from the selection.':'This tier has no selected species to clear.';clear.addEventListener('click',()=>{draft.replacementNames=draft.replacementNames.filter(name=>!entries.some(s=>s.name===name));dirty=true;renderLists();});actions.append(clear);group.append(actions);
-    const chips=element('div','chips');
-    for(const entry of selected){const info=familyStatus(entry),label=info.complete?' - Complete (skip)':info.best?.rating>=17?' - '+info.best.rating+'/18':' - Needs 17+';const chip=element('span','chip',entry.name+label);const remove=element('button','remove','x');remove.type='button';remove.setAttribute('aria-label','Remove replacement '+entry.name);remove.addEventListener('click',()=>removeName('replacementNames',entry.name));chip.append(remove);chips.append(chip);}
-    if(!selected.length)chips.append(element('p','muted','No species selected in this tier.'));group.append(chips);container.append(group);
-  }
-}
-function renderRoster(){
-  const list=$('replacement-roster');list.replaceChildren();if(!state?.player){list.append(element('p','muted','Sign in to see your owned Miscrits.'));return;}
-  const families=new Set(catalog.filter(s=>draft.replacementNames.includes(s.name)).map(s=>s.id));const active=new Set(state.player.team.map(m=>m.id));
-  $('roster-title').textContent=draft.trainSelected?'Best owned copies':'Eligible replacements';
-  const tier=m=>({Exotic:0,Rare:1,Common:2,Epic:3,Legendary:4}[catalog.find(s=>s.id===m.mId)?.rarity]??5);
-  const ranked=state.player.roster.filter(m=>families.has(m.mId)).sort((a,b)=>(draft.trainSelected?tier(a)-tier(b):0)||b.rating-a.rating||b.level-a.level||a.id-b.id);
-  const roster=draft.trainSelected?ranked.filter((m,i)=>ranked.findIndex(other=>other.mId===m.mId)===i):ranked.filter(m=>m.level<35&&!active.has(m.id));
-  const plan=state.selectedTraining;
-  $('selected-training-status').textContent=draft.trainSelected?(dirty?'Save team settings to apply selection.':plan?.error||(!plan?.indexChecked?'Index will be checked before training. ': '')+`${plan?.traineeIds?.length||0} active trainees / ${plan?.complete?.length||0} completed species / ${plan?.needsCapture?.length||0} need a rating-17+ capture. Exotic > Rare > Common > Epic > Legendary; index checked, no duplicate families; earned XP to level 30. Slot 1 stays yours. This takes priority over level-35 replacements.`):'Choose species below, then enable selected-copy training to level 30.';
-  if(!roster.length)list.append(element('p','muted',draft.trainSelected?'No owned copies from your replacement list. New captures are checked after each battle.':'No eligible copies. Add species you own below level 35.'));
-  for(const member of roster.slice(0,100)){const row=element('div','roster-row');const text=element('div','',member.name);text.append(element('small','',`Level ${member.level} - #${member.id}${draft.trainSelected?(familyStatus(catalog.find(s=>s.id===member.mId)).complete?' - Complete in collection/index (skip)':member.rating<17?' - Need 17+ copy':member.id===state.player.team[0]?.id?' - Lead':active.has(member.id)?' - Training':' - Waiting'):''}`));row.append(text,element('b','',member.rating+' / 18'));list.append(row);}
-}
-function renderTeam(){const container=$('team-cards');container.replaceChildren();for(let i=0;i<4;i++){const m=state.player?.team[i];const card=element('div','team-member');card.append(element('small','',`SLOT ${i+1}${i===0?' · LEAD':''}`));if(m){card.append(image(catalog.find(s=>s.id===m.mId)?.name||m.name),element('strong','',m.name),element('p','',`Level ${m.level} · Rating ${m.rating}/18`),element('small','',m.chp<=0?'Fainted':'HP '+m.chp),element('small','',m.level>=35?'Max level':state.config.trainSelected&&i>0&&m.level>=30?'Training complete at level 30':Number.isFinite(m.xpNeeded)?`XP ${m.xp} / ${m.xpNeeded}${m.readyToTrain?' - Ready to level up':''}`:'XP unavailable'));}else{card.append(element('p','','—'),element('small','','Sign in to load team'));}container.append(card);}}
+// Legacy tier helpers above remain for saved mapping compatibility; no team UI uses them.
+function renderTierLists(){}
+function renderTeam(){teamStore.publish(state,catalog);}
 function combatant(member,side){const card=element('div','combatant');card.append(image(catalog.find(s=>s.id===member.mId)?.name||member.name),element('h3','',member.name),element('p','',`${side} · Level ${member.level}${member.rating!==undefined?' · '+member.rating+'/18':''}`));const bar=element('div','hp-track');const progress=element('progress');progress.max=member.hp;progress.value=Math.max(0,member.chp);progress.setAttribute('aria-label',member.name+' health');bar.append(progress);card.append(bar,element('small','',`${member.chp} / ${member.hp} HP`));return card;}
 function actionButton(label,kind,id,className='button subtle'){const button=element('button',className,label);button.addEventListener('click',()=>post('action',{kind,...(id===undefined?{}:{id})}));return button;}
 function renderBattle(){
@@ -440,7 +412,7 @@ $('desktop-notifications').addEventListener('click',async()=>{
   renderWorkflow();
 });
 function renderHistory(){const records=[...state.history,...state.events].sort((a,b)=>b.time.localeCompare(a.time)).slice(0,300);$('history-count').textContent=state.history.length+' saved records';$('history').replaceChildren();if(!records.length)$('history').append(element('p','muted','Your field notes will appear here.'));for(const record of records){const row=element('div','history-row');const date=new Date(record.time);const time=element('time','',date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));time.title=date.toLocaleString();row.append(time,element('span','',record.message),element('span','badge',record.kind));$('history').append(row);}}
-function render(){const p=state.player;$('connection').textContent=state.reconnecting?'◌ Reconnecting…':state.connected?'● Connected':'● Offline';$('connection').classList.toggle('online',state.connected&&!state.reconnecting);$('account-button').textContent=state.connected?'Sign out':'Sign in';$('account-button').disabled=state.reconnecting||state.busy;$('connect').hidden=state.connected&&!state.reconnecting;$('connect').textContent=state.reconnecting?'Reconnecting…':p&&!state.requiresLogin?'Reconnect ↻':'Connect account ↗';$('connect').disabled=state.reconnecting||state.busy;$('trainer').textContent=p?.name||'Not connected';$('player-level').textContent=p?'Trainer level '+p.level:'Sign in to load your account';$('collection').textContent=p?.roster.length??'—';$('virtue').textContent=p?.virtue??'—';$('wins').textContent=state.wins;$('status').textContent=state.status;$('data-status').textContent=state.dataStatus;$('run').disabled=!state.connected||state.reconnecting||(!state.running&&state.busy);$('run').textContent=state.running?'Pause automation':'Start automation';$('run').classList.toggle('running',state.running);if(!dirty)loadDraft(state.config);else if(tab==='hunt')renderLists();else renderTierLists();renderTeam();renderRoster();renderBattle();if(tab==='history')renderHistory();if(tab==='collection')renderCollection();if(tab==='workflow')renderWorkflow();}
+function render(){const p=state.player;$('connection').textContent=state.reconnecting?'◌ Reconnecting…':state.connected?'● Connected':'● Offline';$('connection').classList.toggle('online',state.connected&&!state.reconnecting);$('account-button').textContent=state.connected?'Sign out':'Sign in';$('account-button').disabled=state.reconnecting||state.busy;$('connect').hidden=state.connected&&!state.reconnecting;$('connect').textContent=state.reconnecting?'Reconnecting…':p&&!state.requiresLogin?'Reconnect ↻':'Connect account ↗';$('connect').disabled=state.reconnecting||state.busy;$('trainer').textContent=p?.name||'Not connected';$('player-level').textContent=p?'Trainer level '+p.level:'Sign in to load your account';$('collection').textContent=p?.roster.length??'—';$('virtue').textContent=p?.virtue??'—';$('wins').textContent=state.wins;$('status').textContent=state.status;$('data-status').textContent=state.dataStatus;$('run').disabled=!state.connected||state.reconnecting||(!state.running&&state.busy);$('run').textContent=state.running?'Pause automation':'Start automation';$('run').classList.toggle('running',state.running);if(!dirty)loadDraft(state.config);else if(tab==='hunt')renderLists();renderTeam();renderBattle();if(tab==='history')renderHistory();if(tab==='collection')renderCollection();if(tab==='workflow')renderWorkflow();}
 function reconcileHuntTargets(previous,current){
   if(!dirty||!draft)return false;
   const removed=new Set((previous||[]).filter(name=>!(current||[]).includes(name)));
@@ -450,7 +422,6 @@ function reconcileHuntTargets(previous,current){
 }
 async function poll(){if(polling||!csrf)return;polling=true;try{const next=await api('state');const targetsChanged=reconcileHuntTargets(state?.config?.names,next.config.names);consumeAlerts(state,next);state=next;if(targetsChanged)renderLists();render();}catch(error){$('status').textContent=error.message;$('connection').textContent='● Backend unavailable';$('run').disabled=true;}finally{polling=false;}}
 $('run').addEventListener('click',async()=>{if(state.running){await post('pause');return;}if(selectedActivity()==='wild'&&state.huntAccessVersion!==2){toast('Restart the website backend to load the corrected area access rules before hunting.');return;}if(dirty){toast('Save your settings before starting.');return;}const desired=selectedActivity();if(desired!==draft.activity){try{await api('settings',{...draft,activity:desired});await poll();}catch(error){toast(error.message);return;}}await post('start');});
-$('tier-account-action').addEventListener('click',()=>state?.player&&!state.requiresLogin?post('reconnect'):openLogin());
 function openLogin(){if(!state?.connected&&!state?.reconnecting)$('login-dialog').showModal();}
 $('connect').addEventListener('click',()=>state?.player&&!state.requiresLogin?post('reconnect'):openLogin());$('close-login').addEventListener('click',()=>$('login-dialog').close());
 $('account-button').addEventListener('click',()=>state?.connected?post('logout'):openLogin());
@@ -462,10 +433,14 @@ function fillCatalog(){
   $('species').replaceChildren();for(const s of catalog){const option=element('option');option.value=s.name;$('species').append(option);}
   $('target-input').placeholder=`Search ${catalog.length} Miscrits…`;$('mapped-count').textContent=catalog.filter(s=>s.stops.length).length+' with routes';
 }
+const disconnectTeam=teamStore.connect({
+  settings:async value=>{if(posting)throw new Error('Wait for the current request.');posting=true;try{await api('team/settings',value);await poll();}finally{posting=false;}},
+  swap:async value=>{if(posting)throw new Error('Wait for the current request.');posting=true;try{await api('team/swap',value);await poll();}catch(error){await poll();throw error;}finally{posting=false;}}
+});
 let disposed=false;
 void (async()=>{try{await bootstrapBrowser();if(!disposed)await poll();}catch(error){if(!disposed){$('status').textContent=error.message;toast(error.message);}}})();
 const pollTimer=setInterval(()=>{if(!disposed)void poll();},1800);
-return ()=>{disposed=true;clearInterval(pollTimer);clearTimeout(toastTimer);document.removeEventListener('keydown',onKeyDown);};
+return ()=>{disconnectTeam();disposed=true;clearInterval(pollTimer);clearTimeout(toastTimer);document.removeEventListener('keydown',onKeyDown);};
 
 
 }

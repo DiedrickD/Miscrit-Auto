@@ -1,4 +1,4 @@
-export const DEFAULTS = Object.freeze({activity:'wild', mode:'manual_target', names:[],primaryTarget:'', minRating:17, searchIntervalSeconds:8, captureThreshold:70, captureLowRatedTargets:false, autoRemoveCapturedTargets:true, fleeUnwanted:true, maxAttacks:12, campaignLimit:10, autoLevel:false, trainSelected:false, autoReplace:false, replacementNames:[],wildAutoHeal:false,wildHealBudget:30,notifyEvents:true,arenaType:'Default',arenaStrategy:'smart',arenaBattleLimit:10,arenaStopOnLoss:true,arenaAllowInjured:false});
+export const DEFAULTS = Object.freeze({activity:'wild', mode:'manual_target', names:[],primaryTarget:'', minRating:17, searchIntervalSeconds:8, captureThreshold:70, captureLowRatedTargets:false, autoRemoveCapturedTargets:true, fleeUnwanted:true, maxAttacks:12, campaignLimit:10, autoLevel:false, platinumUpgradeIds:[], trainSelected:false, autoReplace:false, replacementNames:[],wildAutoHeal:false,wildHealBudget:30,notifyEvents:true,arenaType:'Default',arenaStrategy:'smart',arenaBattleLimit:10,arenaStopOnLoss:true,arenaAllowInjured:false});
 export const TRAINING_TIERS=Object.freeze(['Exotic','Rare','Common','Epic','Legendary']);
 export const TRAINING_MIN_RATING=17;
 export function settings(input, catalog) {
@@ -31,6 +31,10 @@ export function settings(input, catalog) {
   for (const key of ['autoLevel','trainSelected','autoReplace','fleeUnwanted','captureLowRatedTargets','autoRemoveCapturedTargets','wildAutoHeal','notifyEvents','arenaStopOnLoss','arenaAllowInjured']) {
     if (input[key] !== undefined && typeof input[key] !== 'boolean') throw new Error('Invalid ' + key);
     if (input[key] !== undefined) result[key] = input[key];
+  }
+  if(input.platinumUpgradeIds!==undefined){
+    if(!Array.isArray(input.platinumUpgradeIds)||input.platinumUpgradeIds.length>1000||input.platinumUpgradeIds.some(id=>!Number.isSafeInteger(id)||id<=0))throw new Error('Invalid platinum upgrade selection.');
+    result.platinumUpgradeIds=[...new Set(input.platinumUpgradeIds)];
   }
   return result;
 }

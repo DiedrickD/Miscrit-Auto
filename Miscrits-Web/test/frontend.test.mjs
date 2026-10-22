@@ -26,12 +26,12 @@ test('tier prerequisites distinguish signed-out, reconnecting, unloaded index an
   context.state.connected=false;assert.equal(vm.runInContext('tierAccess().action',context),'Reconnect');
 });
 
-test('account polling refreshes tier buttons while preserving unsaved settings',()=>{
+test('account polling updates the React team bridge while preserving unsaved settings',()=>{
   const js=readFileSync(new URL('../src/controller.js',import.meta.url),'utf8');
   const render=js.slice(js.indexOf('function render(){'),js.indexOf('async function poll(){'));
-  const elements=new Map();let tiers=0,loads=0;
+  const elements=new Map();let teams=0,loads=0;
   const draft={replacementNames:['My unsaved selection']};
-  const context=vm.createContext({dirty:true,draft,tab:'team',state:{connected:true,reconnecting:false,busy:false,running:false,player:{roster:[]},config:{replacementNames:[]}},$:id=>{if(!elements.has(id))elements.set(id,{classList:{toggle(){}}});return elements.get(id);},loadDraft(){loads++;},renderTierLists(){tiers++;},renderTeam(){},renderRoster(){},renderBattle(){}});
+  const context=vm.createContext({dirty:true,draft,tab:'team',state:{connected:true,reconnecting:false,busy:false,running:false,player:{roster:[]},config:{replacementNames:[]}},$:id=>{if(!elements.has(id))elements.set(id,{classList:{toggle(){}}});return elements.get(id);},loadDraft(){loads++;},renderTeam(){teams++;},renderBattle(){}});
   vm.runInContext(render+';render();',context);
-  assert.equal(tiers,1);assert.equal(loads,0);assert.deepEqual(draft.replacementNames,['My unsaved selection']);
+  assert.equal(teams,1);assert.equal(loads,0);assert.deepEqual(draft.replacementNames,['My unsaved selection']);
 });

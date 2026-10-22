@@ -26,9 +26,9 @@ export default function CampaignPanel() {
           <div className="check-line">
             <span>01</span>
             <div>
-              <h3>Replace level-35 teammates</h3>
+              <h3>Use your active team</h3>
               <p>
-                Uses your separate replacement list when enabled in Your team.
+                Set your four slots in Your team before starting.
               </p>
             </div>
           </div>
